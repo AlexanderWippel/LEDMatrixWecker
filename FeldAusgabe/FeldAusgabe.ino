@@ -2,7 +2,7 @@
 #include <DS3231.h>
 
 //Test Github
-//Filip
+//Alex
 
 #define CLK_PIN 13
 #define DIN_PIN 12
