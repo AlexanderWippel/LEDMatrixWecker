@@ -18,7 +18,11 @@ void setup()
 {
   CLKPR = 0x80;
   CLKPR = 0x00;
-  Serial.begin(9600);
+  
+  SMCR=SMCR|(1<<0);
+  SMCR=SMCR|(1<<2);
+  SMCR=SMCR&~(1<<1);
+  SMCR=SMCR&~(1<<3);
   rtc.begin();
   rtc.setTime(12, 11, 0);
   int devices = lc.getDeviceCount();
@@ -171,13 +175,6 @@ void loop()
         lc.setLed(2, 2, 7, false);
         lc.setLed(2, 5, 7, false);
       }
-
-      /*displayimage(0, zahl[sec_LSB]);
-        displayimage(1, zahl[sec_MSB]);
-
-        displayimage(2, zahl[min_LSB]);
-        displayimage(3, zahl[min_MSB]);*/
-
       displayimage(0, zahl[min_LSB]);
       displayimage(1, zahl[min_MSB]);
 
