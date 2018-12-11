@@ -11,6 +11,7 @@
 
 DS3231 rtc(SDA_PIN, SCL_PIN);
 Time rtc_zeit;
+int zwischenzeit;
 
 LedControl lc = LedControl(DIN_PIN, CLK_PIN, CS_PIN, MAXDEVICES);
 void setup()
@@ -24,9 +25,11 @@ void setup()
   for (int address = 0; address < devices; address++)
   {
     lc.shutdown(address, false);
-    lc.setIntensity(address,2);
+    lc.setIntensity(address, 2);
     lc.clearDisplay(address);
   };
+  rtc_zeit = rtc.getTime();
+  zwischenzeit = rtc_zeit.sec;
 };
 
 const long long int zahl[] =
@@ -89,110 +92,113 @@ void loop()
 {
 
   rtc_zeit = rtc.getTime();
-
-  sec_LSB = (rtc_zeit.sec % 10);
-  sec_MSB = (rtc_zeit.sec / 10) % 10;
-
-  min_LSB = (rtc_zeit.min % 10);
-  min_MSB = (rtc_zeit.min / 10) % 10;
-
-  stund_LSB = (rtc_zeit.hour % 10);
-  stund_MSB = (rtc_zeit.hour / 10) % 10;
-
-  temp_LSB = (((int)rtc.getTemp()) % 10);
-  temp_MSB = (((int)rtc.getTemp()) / 10) % 10;
-  
-
-  if (rtc_zeit.sec <= 7 && rtc_zeit.sec != 0)
+  while (rtc_zeit.sec != zwischenzeit)
   {
-    lc.setLed(3, 0, (rtc_zeit.sec % 8), true);
-  }
-  if (rtc_zeit.sec >= 8 && rtc_zeit.sec <= 15)
-  {
-    lc.setLed(2, 0, (rtc_zeit.sec % 8), true);
-  }
-  if (rtc_zeit.sec >= 16 && rtc_zeit.sec <= 23)
-  {
-    lc.setLed(1, 0, (rtc_zeit.sec % 8), true);
-  }
-  if (rtc_zeit.sec >= 24 && rtc_zeit.sec <= 30)
-  {
-    lc.setLed(0, 0, (rtc_zeit.sec % 8), true);
-  }
+    sec_LSB = (rtc_zeit.sec % 10);
+    sec_MSB = (rtc_zeit.sec / 10) % 10;
+
+    min_LSB = (rtc_zeit.min % 10);
+    min_MSB = (rtc_zeit.min / 10) % 10;
+
+    stund_LSB = (rtc_zeit.hour % 10);
+    stund_MSB = (rtc_zeit.hour / 10) % 10;
+
+    temp_LSB = (((int)rtc.getTemp()) % 10);
+    temp_MSB = (((int)rtc.getTemp()) / 10) % 10;
 
 
-  if (rtc_zeit.sec >= 31 && rtc_zeit.sec <= 37)
-  {
-    lc.setLed(3, 7, ((rtc_zeit.sec - 30) % 8), true);
-  }
-  if (rtc_zeit.sec >= 38 && rtc_zeit.sec <= 45)
-  {
-    lc.setLed(2, 7, ((rtc_zeit.sec - 30) % 8), true);
-  }
-  if (rtc_zeit.sec >= 46 && rtc_zeit.sec <= 53)
-  {
-    lc.setLed(1, 7, ((rtc_zeit.sec - 30) % 8), true);
-  }
-  if (rtc_zeit.sec >= 54 && rtc_zeit.sec <= 60)
-  {
-    lc.setLed(0, 7, ((rtc_zeit.sec - 30) % 8), true);
-  }
-
-  if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec>=50 && rtc_zeit.sec<=53)
-  {
-    displayimage(0, temperatur[1]);
-    displayimage(1, temperatur[0]);
-
-    displayimage(2, zahl[temp_LSB]);
-    displayimage(3, zahl[temp_MSB]);
-  }
-
-  else
-  {
-    if (rtc_zeit.sec % 2 == 1)
+    if (rtc_zeit.sec <= 7 && rtc_zeit.sec != 0)
     {
-      if (bolean == true)
-      {
-        bolean = false;
-      }
-      lc.setLed(2, 2, 7, true);
-      lc.setLed(2, 5, 7, true);
+      lc.setLed(3, 0, (rtc_zeit.sec % 8), true);
     }
+    if (rtc_zeit.sec >= 8 && rtc_zeit.sec <= 15)
+    {
+      lc.setLed(2, 0, (rtc_zeit.sec % 8), true);
+    }
+    if (rtc_zeit.sec >= 16 && rtc_zeit.sec <= 23)
+    {
+      lc.setLed(1, 0, (rtc_zeit.sec % 8), true);
+    }
+    if (rtc_zeit.sec >= 24 && rtc_zeit.sec <= 30)
+    {
+      lc.setLed(0, 0, (rtc_zeit.sec % 8), true);
+    }
+
+
+    if (rtc_zeit.sec >= 31 && rtc_zeit.sec <= 37)
+    {
+      lc.setLed(3, 7, ((rtc_zeit.sec - 30) % 8), true);
+    }
+    if (rtc_zeit.sec >= 38 && rtc_zeit.sec <= 45)
+    {
+      lc.setLed(2, 7, ((rtc_zeit.sec - 30) % 8), true);
+    }
+    if (rtc_zeit.sec >= 46 && rtc_zeit.sec <= 53)
+    {
+      lc.setLed(1, 7, ((rtc_zeit.sec - 30) % 8), true);
+    }
+    if (rtc_zeit.sec >= 54 && rtc_zeit.sec <= 60)
+    {
+      lc.setLed(0, 7, ((rtc_zeit.sec - 30) % 8), true);
+    }
+
+    if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
+    {
+      displayimage(0, temperatur[1]);
+      displayimage(1, temperatur[0]);
+
+      displayimage(2, zahl[temp_LSB]);
+      displayimage(3, zahl[temp_MSB]);
+    }
+
     else
     {
-      if (bolean == false)
+      if (rtc_zeit.sec % 2 == 1)
       {
-        bolean = true;
+        if (bolean == true)
+        {
+          bolean = false;
+        }
+        lc.setLed(2, 2, 7, true);
+        lc.setLed(2, 5, 7, true);
       }
-      lc.setLed(2, 2, 7, false);
-      lc.setLed(2, 5, 7, false);
+      else
+      {
+        if (bolean == false)
+        {
+          bolean = true;
+        }
+        lc.setLed(2, 2, 7, false);
+        lc.setLed(2, 5, 7, false);
+      }
+
+      /*displayimage(0, zahl[sec_LSB]);
+        displayimage(1, zahl[sec_MSB]);
+
+        displayimage(2, zahl[min_LSB]);
+        displayimage(3, zahl[min_MSB]);*/
+
+      displayimage(0, zahl[min_LSB]);
+      displayimage(1, zahl[min_MSB]);
+
+      displayimage(2, zahl[stund_LSB]);
+      displayimage(3, zahl[stund_MSB]);
     }
-    
-    /*displayimage(0, zahl[sec_LSB]);
-    displayimage(1, zahl[sec_MSB]);
 
-    displayimage(2, zahl[min_LSB]);
-    displayimage(3, zahl[min_MSB]);*/
-
-    displayimage(0, zahl[min_LSB]);
-    displayimage(1, zahl[min_MSB]);
-
-    displayimage(2, zahl[stund_LSB]);
-    displayimage(3, zahl[stund_MSB]);
-  }
-
-  //Sekundenanzeige zurücksetzen
-  if (rtc_zeit.sec == 59)
-  {
-    delay(680);
-    for (j = 0; j < 4 ; j++)
+    //Sekundenanzeige zurücksetzen
+    if (rtc_zeit.sec == 59)
     {
-      for (i = 7; i >= 0; i--)
+      delay(680);
+      for (j = 0; j < 4 ; j++)
       {
-        delay(10);
-        lc.setLed(j, 0, i, false);
-        lc.setLed(j, 7, i, false);
+        for (i = 7; i >= 0; i--)
+        {
+          delay(10);
+          lc.setLed(j, 0, i, false);
+          lc.setLed(j, 7, i, false);
+        }
       }
     }
+    zwischenzeit = rtc_zeit.sec;
   }
 }
