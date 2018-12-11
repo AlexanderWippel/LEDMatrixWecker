@@ -1,10 +1,6 @@
 #include <LedControl.h>
 #include <DS3231.h>
 
-//Test Github
-//Alex3
-//GitHubisOasch
-
 #define CLK_PIN 13
 #define DIN_PIN 12
 #define CS_PIN 11
@@ -28,7 +24,7 @@ void setup()
   for (int address = 0; address < devices; address++)
   {
     lc.shutdown(address, false);
-    lc.setIntensity(address,0);
+    lc.setIntensity(address,2);
     lc.clearDisplay(address);
   };
 };
