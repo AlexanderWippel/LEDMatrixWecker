@@ -18,13 +18,14 @@ void setup()
 {
   CLKPR = 0x80;
   CLKPR = 0x00;
-  
-  SMCR=SMCR|(1<<0);
-  SMCR=SMCR|(1<<2);
-  SMCR=SMCR&~(1<<1);
-  SMCR=SMCR&~(1<<3);
+
+  SMCR = SMCR | (1 << 0);
+  SMCR = SMCR | (1 << 2);
+  SMCR = SMCR & ~(1 << 1);
+  SMCR = SMCR & ~(1 << 3);
   rtc.begin();
-  rtc.setTime(12, 11, 0);
+  rtc.setTime(12, 11, 50);
+
   int devices = lc.getDeviceCount();
   for (int address = 0; address < devices; address++)
   {
@@ -34,6 +35,7 @@ void setup()
   };
   rtc_zeit = rtc.getTime();
   zwischenzeit = rtc_zeit.sec;
+
 };
 
 const long long int zahl[] =
@@ -71,7 +73,10 @@ void displayimage(int device, long long int zahlen)
   }
 }
 
+
+
 boolean bolean = true;
+boolean einmal = true;
 
 int i = 0;
 int j = 0;
@@ -92,25 +97,46 @@ int stund_MSB = 0;
 int temp_LSB = 0;
 int temp_MSB = 0;
 
+void berechnen()
+{
+  rtc_zeit = rtc.getTime();
+
+  sec_LSB = (rtc_zeit.sec % 10);
+  sec_MSB = (rtc_zeit.sec / 10) % 10;
+
+  min_LSB = (rtc_zeit.min % 10);
+  min_MSB = (rtc_zeit.min / 10) % 10;
+
+  stund_LSB = (rtc_zeit.hour % 10);
+  stund_MSB = (rtc_zeit.hour / 10) % 10;
+
+  temp_LSB = (((int)rtc.getTemp()) % 10);
+  temp_MSB = (((int)rtc.getTemp()) / 10) % 10;
+}
+
+
+  
 void loop()
 {
 
-  rtc_zeit = rtc.getTime();
+
   while (rtc_zeit.sec != zwischenzeit)
   {
-    sec_LSB = (rtc_zeit.sec % 10);
-    sec_MSB = (rtc_zeit.sec / 10) % 10;
+    berechnen();
+    
+    if (einmal == true)
+    {
+      //Uhrzeit anzeigen
+      displayimage(0, zahl[min_LSB]);
+      displayimage(1, zahl[min_MSB]);
 
-    min_LSB = (rtc_zeit.min % 10);
-    min_MSB = (rtc_zeit.min / 10) % 10;
+      displayimage(2, zahl[stund_LSB]);
+      displayimage(3, zahl[stund_MSB]);
 
-    stund_LSB = (rtc_zeit.hour % 10);
-    stund_MSB = (rtc_zeit.hour / 10) % 10;
+      einmal = false;
+    }
 
-    temp_LSB = (((int)rtc.getTemp()) % 10);
-    temp_MSB = (((int)rtc.getTemp()) / 10) % 10;
-
-
+    //Sekundenazeige
     if (rtc_zeit.sec <= 7 && rtc_zeit.sec != 0)
     {
       lc.setLed(3, 0, (rtc_zeit.sec % 8), true);
@@ -146,8 +172,22 @@ void loop()
       lc.setLed(0, 7, ((rtc_zeit.sec - 30) % 8), true);
     }
 
+    if (rtc_zeit.sec == 14 || rtc_zeit.sec == 34 || rtc_zeit.sec == 54)
+    {
+      //Uhrzeit anzeigen
+      displayimage(0, zahl[min_LSB]);
+      displayimage(1, zahl[min_MSB]);
+
+      displayimage(2, zahl[stund_LSB]);
+      displayimage(3, zahl[stund_MSB]);
+    }
+
+    //Temperatur anzeigen
     if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
     {
+      lc.setLed(2, 2, 7, false);
+      lc.setLed(2, 5, 7, false);
+
       displayimage(0, temperatur[1]);
       displayimage(1, temperatur[0]);
 
@@ -157,6 +197,7 @@ void loop()
 
     else
     {
+      //Doppelpunkt anzeigen
       if (rtc_zeit.sec % 2 == 1)
       {
         if (bolean == true)
@@ -175,17 +216,11 @@ void loop()
         lc.setLed(2, 2, 7, false);
         lc.setLed(2, 5, 7, false);
       }
-      displayimage(0, zahl[min_LSB]);
-      displayimage(1, zahl[min_MSB]);
-
-      displayimage(2, zahl[stund_LSB]);
-      displayimage(3, zahl[stund_MSB]);
     }
-
     //Sekundenanzeige zurücksetzen
     if (rtc_zeit.sec == 59)
     {
-      delay(680);
+      delay(660);
       for (j = 0; j < 4 ; j++)
       {
         for (i = 7; i >= 0; i--)
@@ -195,6 +230,13 @@ void loop()
           lc.setLed(j, 7, i, false);
         }
       }
+      berechnen();
+      //Uhrzeit anzeigen
+      displayimage(0, zahl[min_LSB]);
+      displayimage(1, zahl[min_MSB]);
+
+      displayimage(2, zahl[stund_LSB]);
+      displayimage(3, zahl[stund_MSB]);
     }
     zwischenzeit = rtc_zeit.sec;
   }
