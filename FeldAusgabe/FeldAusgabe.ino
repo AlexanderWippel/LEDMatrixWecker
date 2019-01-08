@@ -9,9 +9,29 @@
 #define SDA_PIN A0
 #define SCL_PIN A1
 
-DS3231 rtc(SDA_PIN, SCL_PIN);
 Time rtc_zeit;
 int zwischenzeit;
+
+boolean bolean = true;
+boolean einmal = true;
+
+int i = 0;
+int j = 0;
+int sek_d = 3;
+int sek_r = 0;
+int sek_s = 1;
+int x = 0;
+
+int min_LSB = 0;
+int min_MSB = 0;
+
+int stund_LSB = 0;
+int stund_MSB = 0;
+
+int temp_LSB = 0;
+int temp_MSB = 0;
+
+DS3231 rtc(SDA_PIN, SCL_PIN);
 
 LedControl lc = LedControl(DIN_PIN, CLK_PIN, CS_PIN, MAXDEVICES);
 void setup()
@@ -20,7 +40,7 @@ void setup()
   CLKPR = 0x00;
 
   rtc.begin();
-  rtc.setTime(23,58, 50);
+  rtc.setTime(12,11, 0);
 
   int devices = lc.getDeviceCount();
   for (int address = 0; address < devices; address++)
@@ -55,18 +75,7 @@ const long long int temperatur[] =
 
 const long long int prozent = {0x0062640810264600};
 
-void delayausgabe(int device, long long int zahlen)
-{
-  for (int i = 1; i < 7; i++)
-  {
-    byte row = (zahlen >> i * 8) & 0xff;
-    for (int j = 1; j < 7; j++)
-    {
-      lc.setLed(device, i, j, bitRead(row, j));
-    }
-    delay(1);
-  }
-}
+
 
 void ausgabe(int device, long long int zahlen)
 {
@@ -80,36 +89,9 @@ void ausgabe(int device, long long int zahlen)
   }
 }
 
-
-
-boolean bolean = true;
-boolean einmal = true;
-
-int i = 0;
-int j = 0;
-int sek_d = 3;
-int sek_r = 0;
-int sek_s = 1;
-int x = 0;
-
-int sec_MSB = 0;
-int sec_LSB = 0;
-
-int min_LSB = 0;
-int min_MSB = 0;
-
-int stund_LSB = 0;
-int stund_MSB = 0;
-
-int temp_LSB = 0;
-int temp_MSB = 0;
-
 void berechnen()
 {
   rtc_zeit = rtc.getTime();
-
-  sec_LSB = (rtc_zeit.sec % 10);
-  sec_MSB = (rtc_zeit.sec / 10) % 10;
 
   min_LSB = (rtc_zeit.min % 10);
   min_MSB = (rtc_zeit.min / 10) % 10;
@@ -121,29 +103,26 @@ void berechnen()
   temp_MSB = (((int)rtc.getTemp()) / 10) % 10;
 }
 
-
-  
-void loop()
+void uhrzeitanzeigen()
 {
-  rtc_zeit = rtc.getTime();
-
-  while (rtc_zeit.sec != zwischenzeit)
-  {
-    berechnen();
-    
-    if (einmal == true)
-    {
-      //Uhrzeit anzeigen
       ausgabe(0, zahl[min_LSB]);
       ausgabe(1, zahl[min_MSB]);
 
       ausgabe(2, zahl[stund_LSB]);
       ausgabe(3, zahl[stund_MSB]);
+}
 
-      einmal = false;
-    }
+void temperaturanzeigen()
+{
+      ausgabe(0, temperatur[1]);
+      ausgabe(1, temperatur[0]);
 
-    //Sekundenazeige
+      ausgabe(2, zahl[temp_LSB]);
+      ausgabe(3, zahl[temp_MSB]);
+}
+
+void sekundenanzeigen()
+{
     if (rtc_zeit.sec <= 7 && rtc_zeit.sec != 0)
     {
       lc.setLed(3, 0, (rtc_zeit.sec % 8), true);
@@ -178,28 +157,36 @@ void loop()
     {
       lc.setLed(0, 7, ((rtc_zeit.sec - 30) % 8), true);
     }
+}
+
+
+void loop()
+{
+  rtc_zeit = rtc.getTime();
+
+  while (rtc_zeit.sec != zwischenzeit)
+  {
+    berechnen();
+    
+    if (einmal == true)
+    {
+      uhrzeitanzeigen();
+      einmal = false;
+    }
+
+    sekundenanzeigen();
 
     if (rtc_zeit.sec == 14 || rtc_zeit.sec == 34 || rtc_zeit.sec == 54)
     {
-      //Uhrzeit anzeigen
-      ausgabe(0, zahl[min_LSB]);
-      ausgabe(1, zahl[min_MSB]);
-
-      ausgabe(2, zahl[stund_LSB]);
-      ausgabe(3, zahl[stund_MSB]);
+      uhrzeitanzeigen();
     }
 
-    //Temperatur anzeigen
     if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
     {
       lc.setLed(2, 2, 7, false);
       lc.setLed(2, 5, 7, false);
-
-      ausgabe(0, temperatur[1]);
-      ausgabe(1, temperatur[0]);
-
-      ausgabe(2, zahl[temp_LSB]);
-      ausgabe(3, zahl[temp_MSB]);
+      
+      temperaturanzeigen();
     }
 
     else
@@ -238,12 +225,7 @@ void loop()
         }
       }
       berechnen();
-      //Uhrzeit anzeigen
-      delayausgabe(0, zahl[min_LSB]);
-      delayausgabe(1, zahl[min_MSB]);
-
-      delayausgabe(2, zahl[stund_LSB]);
-      delayausgabe(3, zahl[stund_MSB]);
+      uhrzeitanzeigen();
     }
     zwischenzeit = rtc_zeit.sec;
   }
