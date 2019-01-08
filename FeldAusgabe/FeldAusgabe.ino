@@ -20,7 +20,7 @@ void setup()
   CLKPR = 0x00;
 
   rtc.begin();
-  rtc.setTime(12, 11, 50);
+  rtc.setTime(23,58, 50);
 
   int devices = lc.getDeviceCount();
   for (int address = 0; address < devices; address++)
@@ -56,7 +56,21 @@ const long long int temperatur[] =
 
 const long long int prozent = {0x0062640810264600};
 
-void displayimage(int device, long long int zahlen)
+void delayausgabe(int device, long long int zahlen)
+{
+
+  for (int i = 1; i < 7; i++)
+  {
+    byte row = (zahlen >> i * 8) & 0xff;
+    for (int j = 1; j < 7; j++)
+    {
+      lc.setLed(device, i, j, bitRead(row, j));
+    }
+    delay(40);
+  }
+}
+
+void ausgabe(int device, long long int zahlen)
 {
 
   for (int i = 1; i < 7; i++)
@@ -124,11 +138,11 @@ void loop()
     if (einmal == true)
     {
       //Uhrzeit anzeigen
-      displayimage(0, zahl[min_LSB]);
-      displayimage(1, zahl[min_MSB]);
+      ausgabe(0, zahl[min_LSB]);
+      ausgabe(1, zahl[min_MSB]);
 
-      displayimage(2, zahl[stund_LSB]);
-      displayimage(3, zahl[stund_MSB]);
+      ausgabe(2, zahl[stund_LSB]);
+      ausgabe(3, zahl[stund_MSB]);
 
       einmal = false;
     }
@@ -172,11 +186,11 @@ void loop()
     if (rtc_zeit.sec == 14 || rtc_zeit.sec == 34 || rtc_zeit.sec == 54)
     {
       //Uhrzeit anzeigen
-      displayimage(0, zahl[min_LSB]);
-      displayimage(1, zahl[min_MSB]);
+      ausgabe(0, zahl[min_LSB]);
+      ausgabe(1, zahl[min_MSB]);
 
-      displayimage(2, zahl[stund_LSB]);
-      displayimage(3, zahl[stund_MSB]);
+      ausgabe(2, zahl[stund_LSB]);
+      ausgabe(3, zahl[stund_MSB]);
     }
 
     //Temperatur anzeigen
@@ -185,11 +199,11 @@ void loop()
       lc.setLed(2, 2, 7, false);
       lc.setLed(2, 5, 7, false);
 
-      displayimage(0, temperatur[1]);
-      displayimage(1, temperatur[0]);
+      ausgabe(0, temperatur[1]);
+      ausgabe(1, temperatur[0]);
 
-      displayimage(2, zahl[temp_LSB]);
-      displayimage(3, zahl[temp_MSB]);
+      ausgabe(2, zahl[temp_LSB]);
+      ausgabe(3, zahl[temp_MSB]);
     }
 
     else
@@ -229,11 +243,11 @@ void loop()
       }
       berechnen();
       //Uhrzeit anzeigen
-      displayimage(0, zahl[min_LSB]);
-      displayimage(1, zahl[min_MSB]);
+      delayausgabe(0, zahl[min_LSB]);
+      delayausgabe(1, zahl[min_MSB]);
 
-      displayimage(2, zahl[stund_LSB]);
-      displayimage(3, zahl[stund_MSB]);
+      delayausgabe(2, zahl[stund_LSB]);
+      delayausgabe(3, zahl[stund_MSB]);
     }
     zwischenzeit = rtc_zeit.sec;
   }
