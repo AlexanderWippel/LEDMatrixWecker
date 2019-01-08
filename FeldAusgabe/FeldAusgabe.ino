@@ -19,10 +19,6 @@ void setup()
   CLKPR = 0x80;
   CLKPR = 0x00;
 
-  SMCR = SMCR | (1 << 0);
-  SMCR = SMCR | (1 << 2);
-  SMCR = SMCR & ~(1 << 1);
-  SMCR = SMCR & ~(1 << 3);
   rtc.begin();
   rtc.setTime(12, 11, 50);
 
@@ -118,11 +114,12 @@ void berechnen()
   
 void loop()
 {
-
+  rtc_zeit = rtc.getTime();
 
   while (rtc_zeit.sec != zwischenzeit)
   {
     berechnen();
+    
     
     if (einmal == true)
     {
