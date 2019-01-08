@@ -31,7 +31,6 @@ void setup()
   };
   rtc_zeit = rtc.getTime();
   zwischenzeit = rtc_zeit.sec;
-
 };
 
 const long long int zahl[] =
@@ -58,7 +57,6 @@ const long long int prozent = {0x0062640810264600};
 
 void delayausgabe(int device, long long int zahlen)
 {
-
   for (int i = 1; i < 7; i++)
   {
     byte row = (zahlen >> i * 8) & 0xff;
@@ -66,13 +64,12 @@ void delayausgabe(int device, long long int zahlen)
     {
       lc.setLed(device, i, j, bitRead(row, j));
     }
-    delay(40);
+    delay(1);
   }
 }
 
 void ausgabe(int device, long long int zahlen)
 {
-
   for (int i = 1; i < 7; i++)
   {
     byte row = (zahlen >> i * 8) & 0xff;
@@ -133,7 +130,6 @@ void loop()
   while (rtc_zeit.sec != zwischenzeit)
   {
     berechnen();
-    
     
     if (einmal == true)
     {
