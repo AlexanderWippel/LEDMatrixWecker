@@ -40,7 +40,7 @@ void setup()
   CLKPR = 0x00;
 
   rtc.begin();
-  rtc.setTime(12,11, 0);
+  rtc.setTime(12,10, 0);
 
   int devices = lc.getDeviceCount();
   for (int address = 0; address < devices; address++)
