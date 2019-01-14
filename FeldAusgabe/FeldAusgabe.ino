@@ -160,6 +160,7 @@ void sekundenanzeigen()
 }
 
 
+
 void loop()
 {
   rtc_zeit = rtc.getTime();
@@ -180,7 +181,7 @@ void loop()
     {
       uhrzeitanzeigen();
     }
-
+    //Else IF
     if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
     {
       lc.setLed(2, 2, 7, false);
