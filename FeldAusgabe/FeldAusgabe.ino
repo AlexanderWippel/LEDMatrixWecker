@@ -159,6 +159,44 @@ void sekundenanzeigen()
     }
 }
 
+void sekundenanzeige_zuruecksetzen()
+{
+  delay(660);
+      for (j = 0; j < 4 ; j++)
+      {
+        for (i = 7; i >= 0; i--)
+        {
+          delay(10);
+          lc.setLed(j, 0, i, false);
+          lc.setLed(j, 7, i, false);
+        }
+      }
+      berechnen();
+      uhrzeitanzeigen();
+}
+
+void doppelpunkt_anzeigen()
+{
+   if (rtc_zeit.sec % 2 == 1)
+      {
+        if (bolean == true)
+        {
+          bolean = false;
+        }
+        lc.setLed(2, 2, 7, true);
+        lc.setLed(2, 5, 7, true);
+      }
+      
+      else
+      {
+        if (bolean == false)
+        {
+          bolean = true;
+        }
+        lc.setLed(2, 2, 7, false);
+        lc.setLed(2, 5, 7, false);
+      }
+}
 
 
 void loop()
@@ -193,40 +231,12 @@ void loop()
     else
     {
       //Doppelpunkt anzeigen
-      if (rtc_zeit.sec % 2 == 1)
-      {
-        if (bolean == true)
-        {
-          bolean = false;
-        }
-        lc.setLed(2, 2, 7, true);
-        lc.setLed(2, 5, 7, true);
-      }
-      else
-      {
-        if (bolean == false)
-        {
-          bolean = true;
-        }
-        lc.setLed(2, 2, 7, false);
-        lc.setLed(2, 5, 7, false);
-      }
+     doppelpunkt_anzeigen();
     }
     //Sekundenanzeige zurücksetzen
     if (rtc_zeit.sec == 59)
     {
-      delay(660);
-      for (j = 0; j < 4 ; j++)
-      {
-        for (i = 7; i >= 0; i--)
-        {
-          delay(10);
-          lc.setLed(j, 0, i, false);
-          lc.setLed(j, 7, i, false);
-        }
-      }
-      berechnen();
-      uhrzeitanzeigen();
+      sekundenanzeige_zuruecksetzen();
     }
     zwischenzeit = rtc_zeit.sec;
   }
