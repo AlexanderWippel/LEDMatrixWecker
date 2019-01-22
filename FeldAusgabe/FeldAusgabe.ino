@@ -74,8 +74,14 @@ const long long int temperatur[] =
 };
 
 const long long int prozent = {0x0062640810264600};
+//define Menüzeichen aus uhr feld machen
+const long long int uhr = {0x3c4281b98989423c};
 
-
+const long long int weckwellenrechtslinks[]=
+{
+  0x0012242424140200,
+  0x0040282424244800
+};
 
 void ausgabe(int device, long long int zahlen)
 {
