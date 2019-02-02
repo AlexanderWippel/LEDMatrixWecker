@@ -17,10 +17,6 @@ boolean einmal = true;
 
 int i = 0;
 int j = 0;
-int sek_d = 3;
-int sek_r = 0;
-int sek_s = 1;
-int x = 0;
 
 int min_LSB = 0;
 int min_MSB = 0;
@@ -43,6 +39,7 @@ void setup()
   rtc.setTime(12,10, 0);
 
   int devices = lc.getDeviceCount();
+  
   for (int address = 0; address < devices; address++)
   {
     lc.shutdown(address, false);
@@ -77,7 +74,7 @@ const long long int prozent = {0x0062640810264600};
 //define Menüzeichen aus uhr feld machen
 const long long int uhr = {0x3c4281b98989423c};
 
-const long long int weckwellenrechtslinks[]=
+const long long int weckwellen_rechts_links[]=
 {
   0x0012242424140200,
   0x0040282424244800
@@ -225,8 +222,8 @@ void loop()
     {
       uhrzeitanzeigen();
     }
-    //Else IF
-    if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
+    
+    else if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
     {
       lc.setLed(2, 2, 7, false);
       lc.setLed(2, 5, 7, false);
@@ -236,7 +233,7 @@ void loop()
 
     else
     {
-      //Doppelpunkt anzeigen
+     //Doppelpunkt anzeigen
      doppelpunkt_anzeigen();
     }
     //Sekundenanzeige zurücksetzen
