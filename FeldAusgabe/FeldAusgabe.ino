@@ -14,6 +14,7 @@ int zwischenzeit;
 
 boolean bolean = true;
 boolean einmal = true;
+boolean isr=false;
 
 int x=0;
 int i = 0;
@@ -68,20 +69,6 @@ LedControl lc = LedControl(DIN_PIN, CLK_PIN, CS_PIN, MAXDEVICES);
 void setup()
 {
 
-  rtc.begin();
-  rtc.setTime(12,10, 0);
-
-  int devices = lc.getDeviceCount();
-  
-  for (int address = 0; address < devices; address++)
-  {
-    lc.shutdown(address, false);
-    lc.setIntensity(address, 2);
-    lc.clearDisplay(address);
-  };
-  rtc_zeit = rtc.getTime();
-  zwischenzeit = rtc_zeit.sec;
-  
   CLKPR = 0x80;
   CLKPR = 0x00;
   
@@ -90,6 +77,14 @@ void setup()
 
   PORTB = PORTB | (1 << 0);
   PORTB = PORTB &~(1 << 5);
+
+  //DDRD&=~(1<<3);
+  //PORTD|=(1<<3);
+
+  EICRA=0;
+  EICRA|=(1<<2);
+  EIMSK=0;
+  EIMSK|=(1<<1);
 
   TCCR1A = 0;
   TCCR1B = 0;
@@ -100,13 +95,11 @@ void setup()
   TCCR2B=0;
   
 
-  
   TIMSK2=0;
   TIMSK2|=(1<<0);
   
   SMCR=0;
   SMCR=1;
-  
   
   TCCR1B = TCCR1B & ~(1 << 0); //stopp
   TCCR1B = TCCR1B & ~(1 << 2);
@@ -126,7 +119,27 @@ void setup()
   SREG = SREG | (1 << 7); //Interrupt global freigeschaltet
 
   
+  rtc.begin();
+  rtc.setTime(12,10, 0);
+
+  int devices = lc.getDeviceCount();
+  
+  for (int address = 0; address < devices; address++)
+  {
+    lc.shutdown(address, false);
+    lc.setIntensity(address, 2);
+    lc.clearDisplay(address);
+  };
+  rtc_zeit = rtc.getTime();
+  zwischenzeit = rtc_zeit.sec;
+  
 };
+
+ISR(INT1_vect)
+{
+    PORTB = PORTB | (1 << 5);
+    isr=true;
+}
 
 ISR(TIMER1_COMPA_vect)
 {
@@ -177,10 +190,12 @@ ISR(TIMER1_COMPA_vect)
   }
 };
 
+
 ISR(TIMER2_OVF_vect)
 {
   TCCR2B=0;
 };
+
 
 void ganzausgabe(int device, long long int zahlen)
 {
@@ -318,7 +333,14 @@ void doppelpunkt_anzeigen()
 
 void loop()
 {
-
+  if(isr==true)
+  {
+    lc.clearDisplay(3);
+    lc.clearDisplay(2);
+    lc.clearDisplay(1);
+    lc.clearDisplay(0);
+    delay(3000);
+  }
   rtc_zeit = rtc.getTime();
 
   while (rtc_zeit.sec != zwischenzeit)
