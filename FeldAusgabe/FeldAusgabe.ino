@@ -15,6 +15,7 @@ int zwischenzeit;
 boolean bolean = true;
 boolean einmal = true;
 
+int x=0;
 int i = 0;
 int j = 0;
 
@@ -26,29 +27,6 @@ int stund_MSB = 0;
 
 int temp_LSB = 0;
 int temp_MSB = 0;
-
-DS3231 rtc(SDA_PIN, SCL_PIN);
-
-LedControl lc = LedControl(DIN_PIN, CLK_PIN, CS_PIN, MAXDEVICES);
-void setup()
-{
-  CLKPR = 0x80;
-  CLKPR = 0x00;
-
-  rtc.begin();
-  rtc.setTime(12,10, 0);
-
-  int devices = lc.getDeviceCount();
-  
-  for (int address = 0; address < devices; address++)
-  {
-    lc.shutdown(address, false);
-    lc.setIntensity(address, 2);
-    lc.clearDisplay(address);
-  };
-  rtc_zeit = rtc.getTime();
-  zwischenzeit = rtc_zeit.sec;
-};
 
 const long long int zahl[] =
 {
@@ -72,13 +50,149 @@ const long long int temperatur[] =
 
 const long long int prozent = {0x0062640810264600};
 //define Menüzeichen aus uhr feld machen
-const long long int uhr = {0x3c4281b98989423c};
+const long long int wecker_aus[] = {0xc0201090909020c0,0x0304080b08080403};
 
-const long long int weckwellen_rechts_links[]=
+const long long int wecker_ein[]=
 {
-  0x0012242424140200,
-  0x0040282424244800
+  0x0000804040408000,
+  0xc0241292929224c0,
+  0x0324484b48482403,
+  0x0001020202010000
 };
+
+DS3231 rtc(SDA_PIN, SCL_PIN);
+
+LedControl lc = LedControl(DIN_PIN, CLK_PIN, CS_PIN, MAXDEVICES);
+
+
+void setup()
+{
+
+  rtc.begin();
+  rtc.setTime(12,10, 0);
+
+  int devices = lc.getDeviceCount();
+  
+  for (int address = 0; address < devices; address++)
+  {
+    lc.shutdown(address, false);
+    lc.setIntensity(address, 2);
+    lc.clearDisplay(address);
+  };
+  rtc_zeit = rtc.getTime();
+  zwischenzeit = rtc_zeit.sec;
+  
+  CLKPR = 0x80;
+  CLKPR = 0x00;
+  
+  DDRB = DDRB | (1 << 5);
+  DDRB = DDRB & ~(1 << 0);
+
+  PORTB = PORTB | (1 << 0);
+  PORTB = PORTB &~(1 << 5);
+
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1=0;
+
+  TCCR2A=0;
+  TCNT2=0;
+  TCCR2B=0;
+  
+
+  
+  TIMSK2=0;
+  TIMSK2|=(1<<0);
+  
+  SMCR=0;
+  SMCR=1;
+  
+  
+  TCCR1B = TCCR1B & ~(1 << 0); //stopp
+  TCCR1B = TCCR1B & ~(1 << 2);
+  TCCR1B = TCCR1B & ~(1 << 1);
+
+  TCCR1A = TCCR1A & ~(1 << 7); //normaler Pin modus
+  TCCR1A = TCCR1A & ~(1 << 6);
+
+  TCCR1A = TCCR1A & ~(1 << 0); //CTC Modus
+  TCCR1A = TCCR1A & ~(1 << 1);
+  TCCR1B = TCCR1B | (1 << 3);
+  TCCR1B = TCCR1B & ~(1 << 4);
+
+  OCR1A = 156; //OCR1A gesetzt
+
+  TIMSK1 = TIMSK1 | (1 << 1); //Interrupt lokal aktiviert
+  SREG = SREG | (1 << 7); //Interrupt global freigeschaltet
+
+  
+};
+
+ISR(TIMER1_COMPA_vect)
+{
+  if ((PINB | 0b11111110) == 0b11111110)
+  {
+    x++;
+    if (x == 100)
+    {
+      PORTB = PORTB ^ (1 << 5);
+
+      TCNT1 = 0;
+
+      TCCR1B = TCCR1B & ~(1 << 0); //stopp
+      TCCR1B = TCCR1B & ~(1 << 2);
+    }
+  }
+  else
+  {
+    if (x < 100)
+    {
+      PORTB = PORTB ^ (1 << 5);
+    }
+    x = 0;
+    TCNT1 = 0;
+
+    TCCR1B = TCCR1B & ~(1 << 0); //stopp
+    TCCR1B = TCCR1B & ~(1 << 2);
+    
+    lc.clearDisplay(3);
+    lc.clearDisplay(0);
+    ganzausgabe(3,wecker_ein[0]);
+    ganzausgabe(2,wecker_ein[1]);   //Im main mit variable und switch case oder if machn
+    ganzausgabe(1,wecker_ein[2]);
+    ganzausgabe(0,wecker_ein[3]);
+    for(i=0;i<300;i++)
+    {
+      TCCR2B=7; //Teiler auf 1024
+      __asm__ __volatile__("sleep");
+    }
+    TCCR2B=0;
+    
+    lc.clearDisplay(3);
+    lc.clearDisplay(2);
+    lc.clearDisplay(1);
+    lc.clearDisplay(0);
+    uhrzeitanzeigen();
+    
+  }
+};
+
+ISR(TIMER2_OVF_vect)
+{
+  TCCR2B=0;
+};
+
+void ganzausgabe(int device, long long int zahlen)
+{
+  for (int i = 0; i < 8; i++)
+  {
+    byte row = (zahlen >> i * 8) & 0xff;
+    for (int j = 0; j < 8; j++)
+    {
+      lc.setLed(device, i, j, bitRead(row, j));
+    }
+  }
+}
 
 void ausgabe(int device, long long int zahlen)
 {
@@ -204,6 +318,7 @@ void doppelpunkt_anzeigen()
 
 void loop()
 {
+
   rtc_zeit = rtc.getTime();
 
   while (rtc_zeit.sec != zwischenzeit)
@@ -243,4 +358,15 @@ void loop()
     }
     zwischenzeit = rtc_zeit.sec;
   }
+
+  if ((PINB | 0b11111110) == 0b11111110)
+  {
+    delay(15);
+    if ((PINB | 0b11111110) == 0b11111110)
+    {
+      TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
+      TCCR1B = TCCR1B | (1 << 2);
+    }
+  }
+  
 }
