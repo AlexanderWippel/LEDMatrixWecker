@@ -1,5 +1,7 @@
 #include <LedControl.h>
 #include <DS3231.h>
+#include <avr/sleep.h>
+
 
 #define CLK_PIN 13
 #define DIN_PIN 12
@@ -14,9 +16,9 @@ int zwischenzeit;
 
 boolean bolean = true;
 boolean einmal = true;
-boolean isr=false;
+boolean isr = false;
 
-int x=0;
+int x = 0;
 int i = 0;
 int j = 0;
 
@@ -51,9 +53,9 @@ const long long int temperatur[] =
 
 const long long int prozent = {0x0062640810264600};
 //define Menüzeichen aus uhr feld machen
-const long long int wecker_aus[] = {0xc0201090909020c0,0x0304080b08080403};
+const long long int wecker_aus[] = {0xc0201090909020c0, 0x0304080b08080403};
 
-const long long int wecker_ein[]=
+const long long int wecker_ein[] =
 {
   0x0000804040408000,
   0xc0241292929224c0,
@@ -65,42 +67,53 @@ DS3231 rtc(SDA_PIN, SCL_PIN);
 
 LedControl lc = LedControl(DIN_PIN, CLK_PIN, CS_PIN, MAXDEVICES);
 
+boolean ledtest = LOW;
 
 void setup()
 {
 
   CLKPR = 0x80;
   CLKPR = 0x00;
-  
+
   DDRB = DDRB | (1 << 5);
   DDRB = DDRB & ~(1 << 0);
 
   PORTB = PORTB | (1 << 0);
-  PORTB = PORTB &~(1 << 5);
+  PORTB = PORTB & ~(1 << 5);
 
-  //DDRD&=~(1<<3);
-  //PORTD|=(1<<3);
+  pinMode(7, OUTPUT);
+  pinMode(6, OUTPUT);
+  digitalWrite(6, LOW);
+  digitalWrite(7, ledtest);
 
-  EICRA=0;
-  EICRA|=(1<<2);
-  EIMSK=0;
-  EIMSK|=(1<<1);
+  DDRD &= ~(1 << 2);
+  PORTD |= (1 << 2);
+
+  DDRD &= ~(1 << 3);
+  PORTD |= (1 << 3);
+
+  EICRA = 0;
+  EIMSK = 0;    //Externen Interrupt am PIN4(PD3) setzen
+  EIMSK |= (1 << 1);
+
+
+
 
   TCCR1A = 0;
   TCCR1B = 0;
-  TCNT1=0;
+  TCNT1 = 0;
 
-  TCCR2A=0;
-  TCNT2=0;
-  TCCR2B=0;
-  
+  TCCR2A = 0;
+  TCNT2 = 0;
+  TCCR2B = 0;
 
-  TIMSK2=0;
-  TIMSK2|=(1<<0);
-  
-  SMCR=0;
-  SMCR=1;
-  
+
+  TIMSK2 = 0;
+  TIMSK2 |= (1 << 0);
+
+  SMCR = 0;
+  SMCR |= (1 << 0);
+
   TCCR1B = TCCR1B & ~(1 << 0); //stopp
   TCCR1B = TCCR1B & ~(1 << 2);
   TCCR1B = TCCR1B & ~(1 << 1);
@@ -118,12 +131,12 @@ void setup()
   TIMSK1 = TIMSK1 | (1 << 1); //Interrupt lokal aktiviert
   SREG = SREG | (1 << 7); //Interrupt global freigeschaltet
 
-  
+
   rtc.begin();
-  rtc.setTime(12,10, 0);
+  rtc.setTime(12, 10, 0);
 
   int devices = lc.getDeviceCount();
-  
+
   for (int address = 0; address < devices; address++)
   {
     lc.shutdown(address, false);
@@ -132,13 +145,29 @@ void setup()
   };
   rtc_zeit = rtc.getTime();
   zwischenzeit = rtc_zeit.sec;
-  
+
+};
+
+ISR(WDT_vect)
+{
+
 };
 
 ISR(INT1_vect)
 {
-    PORTB = PORTB | (1 << 5);
-    isr=true;
+  sleep_disable();
+  SMCR = 0;
+  
+  if (ledtest == LOW)
+  {
+    ledtest = HIGH;
+    digitalWrite(7, ledtest);
+  }
+  else
+  {
+    ledtest = LOW;
+    digitalWrite(7, ledtest);
+  }
 }
 
 ISR(TIMER1_COMPA_vect)
@@ -167,33 +196,42 @@ ISR(TIMER1_COMPA_vect)
 
     TCCR1B = TCCR1B & ~(1 << 0); //stopp
     TCCR1B = TCCR1B & ~(1 << 2);
-    
+
     lc.clearDisplay(3);
     lc.clearDisplay(0);
-    ganzausgabe(3,wecker_ein[0]);
-    ganzausgabe(2,wecker_ein[1]);   //Im main mit variable und switch case oder if machn
-    ganzausgabe(1,wecker_ein[2]);
-    ganzausgabe(0,wecker_ein[3]);
-    for(i=0;i<300;i++)
-    {
-      TCCR2B=7; //Teiler auf 1024
-      __asm__ __volatile__("sleep");
-    }
-    TCCR2B=0;
+    ganzausgabe(3, wecker_ein[0]);
+    ganzausgabe(2, wecker_ein[1]);  //Im main mit variable und switch case oder if machn
+    ganzausgabe(1, wecker_ein[2]);
+    ganzausgabe(0, wecker_ein[3]);
+
+
+    //TCCR2B=7; //Teiler auf 1024
+    WDTCSR = 24;
+    WDTCSR = 33;
+    WDTCSR |= (1 << 6);
+
+    //__asm__ __volatile__("sleep");
+    set_sleep_mode (SLEEP_MODE_PWR_DOWN);  
+    sleep_enable();
+    sleep_cpu();
     
+    SMCR &= ~(1 << 0);
+
+
     lc.clearDisplay(3);
     lc.clearDisplay(2);
     lc.clearDisplay(1);
     lc.clearDisplay(0);
     uhrzeitanzeigen();
-    
+
   }
 };
 
 
 ISR(TIMER2_OVF_vect)
 {
-  TCCR2B=0;
+  //WDTCSR|=(1<<6);
+  //WDTCSR|=(1<<5);
 };
 
 
@@ -237,103 +275,103 @@ void berechnen()
 
 void uhrzeitanzeigen()
 {
-      ausgabe(0, zahl[min_LSB]);
-      ausgabe(1, zahl[min_MSB]);
+  ausgabe(0, zahl[min_LSB]);
+  ausgabe(1, zahl[min_MSB]);
 
-      ausgabe(2, zahl[stund_LSB]);
-      ausgabe(3, zahl[stund_MSB]);
+  ausgabe(2, zahl[stund_LSB]);
+  ausgabe(3, zahl[stund_MSB]);
 }
 
 void temperaturanzeigen()
 {
-      ausgabe(0, temperatur[1]);
-      ausgabe(1, temperatur[0]);
+  ausgabe(0, temperatur[1]);
+  ausgabe(1, temperatur[0]);
 
-      ausgabe(2, zahl[temp_LSB]);
-      ausgabe(3, zahl[temp_MSB]);
+  ausgabe(2, zahl[temp_LSB]);
+  ausgabe(3, zahl[temp_MSB]);
 }
 
 void sekundenanzeigen()
 {
-    if (rtc_zeit.sec <= 7 && rtc_zeit.sec != 0)
-    {
-      lc.setLed(3, 0, (rtc_zeit.sec % 8), true);
-    }
-    if (rtc_zeit.sec >= 8 && rtc_zeit.sec <= 15)
-    {
-      lc.setLed(2, 0, (rtc_zeit.sec % 8), true);
-    }
-    if (rtc_zeit.sec >= 16 && rtc_zeit.sec <= 23)
-    {
-      lc.setLed(1, 0, (rtc_zeit.sec % 8), true);
-    }
-    if (rtc_zeit.sec >= 24 && rtc_zeit.sec <= 30)
-    {
-      lc.setLed(0, 0, (rtc_zeit.sec % 8), true);
-    }
+  if (rtc_zeit.sec <= 7 && rtc_zeit.sec != 0)
+  {
+    lc.setLed(3, 0, (rtc_zeit.sec % 8), true);
+  }
+  if (rtc_zeit.sec >= 8 && rtc_zeit.sec <= 15)
+  {
+    lc.setLed(2, 0, (rtc_zeit.sec % 8), true);
+  }
+  if (rtc_zeit.sec >= 16 && rtc_zeit.sec <= 23)
+  {
+    lc.setLed(1, 0, (rtc_zeit.sec % 8), true);
+  }
+  if (rtc_zeit.sec >= 24 && rtc_zeit.sec <= 30)
+  {
+    lc.setLed(0, 0, (rtc_zeit.sec % 8), true);
+  }
 
 
-    if (rtc_zeit.sec >= 31 && rtc_zeit.sec <= 37)
-    {
-      lc.setLed(3, 7, ((rtc_zeit.sec - 30) % 8), true);
-    }
-    if (rtc_zeit.sec >= 38 && rtc_zeit.sec <= 45)
-    {
-      lc.setLed(2, 7, ((rtc_zeit.sec - 30) % 8), true);
-    }
-    if (rtc_zeit.sec >= 46 && rtc_zeit.sec <= 53)
-    {
-      lc.setLed(1, 7, ((rtc_zeit.sec - 30) % 8), true);
-    }
-    if (rtc_zeit.sec >= 54 && rtc_zeit.sec <= 60)
-    {
-      lc.setLed(0, 7, ((rtc_zeit.sec - 30) % 8), true);
-    }
+  if (rtc_zeit.sec >= 31 && rtc_zeit.sec <= 37)
+  {
+    lc.setLed(3, 7, ((rtc_zeit.sec - 30) % 8), true);
+  }
+  if (rtc_zeit.sec >= 38 && rtc_zeit.sec <= 45)
+  {
+    lc.setLed(2, 7, ((rtc_zeit.sec - 30) % 8), true);
+  }
+  if (rtc_zeit.sec >= 46 && rtc_zeit.sec <= 53)
+  {
+    lc.setLed(1, 7, ((rtc_zeit.sec - 30) % 8), true);
+  }
+  if (rtc_zeit.sec >= 54 && rtc_zeit.sec <= 60)
+  {
+    lc.setLed(0, 7, ((rtc_zeit.sec - 30) % 8), true);
+  }
 }
 
 void sekundenanzeige_zuruecksetzen()
 {
   delay(660);
-      for (j = 0; j < 4 ; j++)
-      {
-        for (i = 7; i >= 0; i--)
-        {
-          delay(10);
-          lc.setLed(j, 0, i, false);
-          lc.setLed(j, 7, i, false);
-        }
-      }
-      berechnen();
-      uhrzeitanzeigen();
+  for (j = 0; j < 4 ; j++)
+  {
+    for (i = 7; i >= 0; i--)
+    {
+      delay(10);
+      lc.setLed(j, 0, i, false);
+      lc.setLed(j, 7, i, false);
+    }
+  }
+  berechnen();
+  uhrzeitanzeigen();
 }
 
 void doppelpunkt_anzeigen()
 {
-   if (rtc_zeit.sec % 2 == 1)
-      {
-        if (bolean == true)
-        {
-          bolean = false;
-        }
-        lc.setLed(2, 2, 7, true);
-        lc.setLed(2, 5, 7, true);
-      }
-      
-      else
-      {
-        if (bolean == false)
-        {
-          bolean = true;
-        }
-        lc.setLed(2, 2, 7, false);
-        lc.setLed(2, 5, 7, false);
-      }
+  if (rtc_zeit.sec % 2 == 1)
+  {
+    if (bolean == true)
+    {
+      bolean = false;
+    }
+    lc.setLed(2, 2, 7, true);
+    lc.setLed(2, 5, 7, true);
+  }
+
+  else
+  {
+    if (bolean == false)
+    {
+      bolean = true;
+    }
+    lc.setLed(2, 2, 7, false);
+    lc.setLed(2, 5, 7, false);
+  }
 }
 
 
 void loop()
 {
-  if(isr==true)
+  if (isr == true)
   {
     lc.clearDisplay(3);
     lc.clearDisplay(2);
@@ -346,7 +384,7 @@ void loop()
   while (rtc_zeit.sec != zwischenzeit)
   {
     berechnen();
-    
+
     if (einmal == true)
     {
       uhrzeitanzeigen();
@@ -359,19 +397,19 @@ void loop()
     {
       uhrzeitanzeigen();
     }
-    
+
     else if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
     {
       lc.setLed(2, 2, 7, false);
       lc.setLed(2, 5, 7, false);
-      
+
       temperaturanzeigen();
     }
 
     else
     {
-     //Doppelpunkt anzeigen
-     doppelpunkt_anzeigen();
+      //Doppelpunkt anzeigen
+      doppelpunkt_anzeigen();
     }
     //Sekundenanzeige zurücksetzen
     if (rtc_zeit.sec == 59)
@@ -390,5 +428,5 @@ void loop()
       TCCR1B = TCCR1B | (1 << 2);
     }
   }
-  
+
 }
