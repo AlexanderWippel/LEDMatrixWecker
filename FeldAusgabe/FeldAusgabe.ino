@@ -148,10 +148,6 @@ void setup()
 
 };
 
-ISR(WDT_vect)
-{
-
-};
 
 ISR(INT1_vect)
 {
@@ -212,10 +208,9 @@ ISR(TIMER1_COMPA_vect)
 
     //__asm__ __volatile__("sleep");
     set_sleep_mode (SLEEP_MODE_PWR_DOWN);  
-    sleep_enable();
-    sleep_cpu();
+    sleep_mode();
     
-    SMCR &= ~(1 << 0);
+    //SMCR &= ~(1 << 0);
 
 
     lc.clearDisplay(3);
