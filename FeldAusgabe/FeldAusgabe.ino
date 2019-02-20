@@ -81,6 +81,7 @@ void setup()
   PORTB = PORTB | (1 << 0);
   PORTB = PORTB & ~(1 << 5);
 
+  Serial.begin(9600);
   pinMode(7, OUTPUT);
   pinMode(6, OUTPUT);
   digitalWrite(6, LOW);
@@ -109,7 +110,6 @@ void setup()
 
 
   TIMSK2 = 0;
-  TIMSK2 |= (1 << 0);
 
   SMCR = 0;
   SMCR |= (1 << 0);
@@ -126,9 +126,11 @@ void setup()
   TCCR1B = TCCR1B | (1 << 3);
   TCCR1B = TCCR1B & ~(1 << 4);
 
-  OCR1A = 156; //OCR1A gesetzt
+  OCR1A = 15600; //OCR1A gesetzt
+  OCR2A=156;
 
   TIMSK1 = TIMSK1 | (1 << 1); //Interrupt lokal aktiviert
+  TIMSK2=TIMSK2|(1<<1);
   SREG = SREG | (1 << 7); //Interrupt global freigeschaltet
 
 
@@ -151,6 +153,7 @@ void setup()
 
 ISR(INT1_vect)
 {
+  Serial.println("im INT1");
   sleep_disable();
   SMCR = 0;
   
@@ -168,6 +171,13 @@ ISR(INT1_vect)
 
 ISR(TIMER1_COMPA_vect)
 {
+  Serial.println("im Timer 1");
+  //isr=true;
+  TCNT1=0;
+  TCCR1B = TCCR1B & ~(1 << 0); //stopp
+  TCCR1B = TCCR1B & ~(1 << 2);
+  TCCR1B = TCCR1B & ~(1 << 1);
+  /*
   if ((PINB | 0b11111110) == 0b11111110)
   {
     x++;
@@ -219,16 +229,64 @@ ISR(TIMER1_COMPA_vect)
     lc.clearDisplay(0);
     uhrzeitanzeigen();
 
+  }*/
+};
+
+
+ISR(TIMER2_COMPA_vect)
+{
+  Serial.println("im Timer 2");
+  if ((PINB | 0b11111110) == 0b11111110)
+  {
+    x++;
+    if (x == 100)
+    {
+      PORTB = PORTB ^ (1 << 5);
+
+      TCNT1 = 0;
+      TCNT2=0;
+
+      TCCR2B=0;
+    }
+  }
+  else
+  {
+    if (x < 100)
+    {
+      isr=true;
+    }
+    x = 0;
+    TCNT1 = 0;
+    TCNT2=0;
+
+    TCCR2B=0;
+
+    
+
+
+    //TCCR2B=7; //Teiler auf 1024
+    
+    TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
+    TCCR1B = TCCR1B | (1 << 2);
+    
+    isr=true;
+    
+    //SMCR &= ~(1 << 0);
+
+
+    /*lc.clearDisplay(3);
+    lc.clearDisplay(2);
+    lc.clearDisplay(1);
+    lc.clearDisplay(0);
+    uhrzeitanzeigen();*/
   }
 };
 
-
-ISR(TIMER2_OVF_vect)
+void gotosleep(void)
 {
-  //WDTCSR|=(1<<6);
-  //WDTCSR|=(1<<5);
+  set_sleep_mode (SLEEP_MODE_IDLE);  
+  sleep_mode();
 };
-
 
 void ganzausgabe(int device, long long int zahlen)
 {
@@ -366,13 +424,34 @@ void doppelpunkt_anzeigen()
 
 void loop()
 {
+  
   if (isr == true)
   {
+    
     lc.clearDisplay(3);
     lc.clearDisplay(2);
     lc.clearDisplay(1);
     lc.clearDisplay(0);
-    delay(3000);
+    
+    ganzausgabe(3, wecker_ein[0]);
+    ganzausgabe(2, wecker_ein[1]);  
+    ganzausgabe(1, wecker_ein[2]);
+    ganzausgabe(0, wecker_ein[3]);
+    
+    delay(2000);
+   // TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
+    //TCCR1B = TCCR1B | (1 << 2);
+    //set_sleep_mode (SLEEP_MODE_IDLE);  
+    //sleep_mode();
+    
+    lc.clearDisplay(3);
+    lc.clearDisplay(2);
+    lc.clearDisplay(1);
+    lc.clearDisplay(0);
+    
+    uhrzeitanzeigen();
+    
+    isr=false;
   }
   rtc_zeit = rtc.getTime();
 
@@ -419,8 +498,10 @@ void loop()
     delay(15);
     if ((PINB | 0b11111110) == 0b11111110)
     {
-      TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
-      TCCR1B = TCCR1B | (1 << 2);
+      //TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
+      //TCCR1B = TCCR1B | (1 << 2);
+      TCCR2B=7;
+      
     }
   }
 
