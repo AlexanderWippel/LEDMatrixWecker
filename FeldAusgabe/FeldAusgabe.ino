@@ -1,7 +1,5 @@
 #include <LedControl.h>
 #include <DS3231.h>
-#include <avr/sleep.h>
-
 
 #define CLK_PIN 13
 #define DIN_PIN 12
@@ -127,10 +125,10 @@ void setup()
   TCCR1B = TCCR1B & ~(1 << 4);
 
   OCR1A = 15600; //OCR1A gesetzt
-  OCR2A=156;
+  OCR2A = 156;
 
   TIMSK1 = TIMSK1 | (1 << 1); //Interrupt lokal aktiviert
-  TIMSK2=TIMSK2|(1<<1);
+  TIMSK2 = TIMSK2 | (1 << 1);
   SREG = SREG | (1 << 7); //Interrupt global freigeschaltet
 
 
@@ -154,9 +152,8 @@ void setup()
 ISR(INT1_vect)
 {
   Serial.println("im INT1");
-  sleep_disable();
   SMCR = 0;
-  
+
   if (ledtest == LOW)
   {
     ledtest = HIGH;
@@ -172,64 +169,11 @@ ISR(INT1_vect)
 ISR(TIMER1_COMPA_vect)
 {
   Serial.println("im Timer 1");
-  //isr=true;
-  TCNT1=0;
+  TCNT1 = 0;
   TCCR1B = TCCR1B & ~(1 << 0); //stopp
   TCCR1B = TCCR1B & ~(1 << 2);
   TCCR1B = TCCR1B & ~(1 << 1);
-  /*
-  if ((PINB | 0b11111110) == 0b11111110)
-  {
-    x++;
-    if (x == 100)
-    {
-      PORTB = PORTB ^ (1 << 5);
 
-      TCNT1 = 0;
-
-      TCCR1B = TCCR1B & ~(1 << 0); //stopp
-      TCCR1B = TCCR1B & ~(1 << 2);
-    }
-  }
-  else
-  {
-    if (x < 100)
-    {
-      PORTB = PORTB ^ (1 << 5);
-    }
-    x = 0;
-    TCNT1 = 0;
-
-    TCCR1B = TCCR1B & ~(1 << 0); //stopp
-    TCCR1B = TCCR1B & ~(1 << 2);
-
-    lc.clearDisplay(3);
-    lc.clearDisplay(0);
-    ganzausgabe(3, wecker_ein[0]);
-    ganzausgabe(2, wecker_ein[1]);  //Im main mit variable und switch case oder if machn
-    ganzausgabe(1, wecker_ein[2]);
-    ganzausgabe(0, wecker_ein[3]);
-
-
-    //TCCR2B=7; //Teiler auf 1024
-    WDTCSR = 24;
-    WDTCSR = 33;
-    WDTCSR |= (1 << 6);
-
-    //__asm__ __volatile__("sleep");
-    set_sleep_mode (SLEEP_MODE_PWR_DOWN);  
-    sleep_mode();
-    
-    //SMCR &= ~(1 << 0);
-
-
-    lc.clearDisplay(3);
-    lc.clearDisplay(2);
-    lc.clearDisplay(1);
-    lc.clearDisplay(0);
-    uhrzeitanzeigen();
-
-  }*/
 };
 
 
@@ -244,49 +188,28 @@ ISR(TIMER2_COMPA_vect)
       PORTB = PORTB ^ (1 << 5);
 
       TCNT1 = 0;
-      TCNT2=0;
+      TCNT2 = 0;
 
-      TCCR2B=0;
+      TCCR2B = 0;
     }
   }
   else
   {
-    if (x < 100)
-    {
-      isr=true;
-    }
     x = 0;
+
     TCNT1 = 0;
-    TCNT2=0;
+    TCNT2 = 0;
 
-    TCCR2B=0;
+    TCCR2B = 0;
 
-    
+    //TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
+    //TCCR1B = TCCR1B | (1 << 2);
 
-
-    //TCCR2B=7; //Teiler auf 1024
-    
-    TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
-    TCCR1B = TCCR1B | (1 << 2);
-    
-    isr=true;
-    
-    //SMCR &= ~(1 << 0);
-
-
-    /*lc.clearDisplay(3);
-    lc.clearDisplay(2);
-    lc.clearDisplay(1);
-    lc.clearDisplay(0);
-    uhrzeitanzeigen();*/
+    isr = true;
   }
 };
 
-void gotosleep(void)
-{
-  set_sleep_mode (SLEEP_MODE_IDLE);  
-  sleep_mode();
-};
+
 
 void ganzausgabe(int device, long long int zahlen)
 {
@@ -382,6 +305,18 @@ void sekundenanzeigen()
   }
 }
 
+void sekundennachholen()
+{
+  int sek = 0;
+  int y = 0;
+  int anzeige = 3;
+  rtc_zeit = rtc.getTime();
+
+  sek = rtc_zeit.sec;
+
+  //FILIP
+}
+
 void sekundenanzeige_zuruecksetzen()
 {
   delay(660);
@@ -421,38 +356,38 @@ void doppelpunkt_anzeigen()
   }
 }
 
+void kurzertastendruck()
+{
+  lc.clearDisplay(3);
+  lc.clearDisplay(2);
+  lc.clearDisplay(1);
+  lc.clearDisplay(0);
+
+  ganzausgabe(3, wecker_ein[0]);
+  ganzausgabe(2, wecker_ein[1]);
+  ganzausgabe(1, wecker_ein[2]);
+  ganzausgabe(0, wecker_ein[3]);
+
+  delay(2000);
+
+  lc.clearDisplay(3);
+  lc.clearDisplay(2);
+  lc.clearDisplay(1);
+  lc.clearDisplay(0);
+
+  uhrzeitanzeigen();
+
+  isr = false;
+}
 
 void loop()
 {
-  
   if (isr == true)
   {
-    
-    lc.clearDisplay(3);
-    lc.clearDisplay(2);
-    lc.clearDisplay(1);
-    lc.clearDisplay(0);
-    
-    ganzausgabe(3, wecker_ein[0]);
-    ganzausgabe(2, wecker_ein[1]);  
-    ganzausgabe(1, wecker_ein[2]);
-    ganzausgabe(0, wecker_ein[3]);
-    
-    delay(2000);
-   // TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
-    //TCCR1B = TCCR1B | (1 << 2);
-    //set_sleep_mode (SLEEP_MODE_IDLE);  
-    //sleep_mode();
-    
-    lc.clearDisplay(3);
-    lc.clearDisplay(2);
-    lc.clearDisplay(1);
-    lc.clearDisplay(0);
-    
-    uhrzeitanzeigen();
-    
-    isr=false;
+    kurzertastendruck();
+    sekundennachholen();
   }
+
   rtc_zeit = rtc.getTime();
 
   while (rtc_zeit.sec != zwischenzeit)
@@ -500,8 +435,8 @@ void loop()
     {
       //TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
       //TCCR1B = TCCR1B | (1 << 2);
-      TCCR2B=7;
-      
+      TCCR2B = 7;
+
     }
   }
 
