@@ -92,11 +92,8 @@ void setup()
   PORTD |= (1 << 3);
 
   EICRA = 0;
-  EIMSK = 0;    //Externen Interrupt am PIN4(PD3) setzen
+  EIMSK = 0;    //Externen Interrupt am PIN3(PD3) setzen
   EIMSK |= (1 << 1);
-
-
-
 
   TCCR1A = 0;
   TCCR1B = 0;
@@ -149,20 +146,20 @@ void setup()
 };
 
 
-ISR(INT1_vect)
+ISR(INT1_vect)  //endlos drinnen wenn taster gedrückt bleibt
 {
   Serial.println("im INT1");
   SMCR = 0;
 
-  if (ledtest == LOW)
+  if ((PIND | 0b11110111) == 0b11110111)
   {
-    ledtest = HIGH;
-    digitalWrite(7, ledtest);
-  }
-  else
-  {
-    ledtest = LOW;
-    digitalWrite(7, ledtest);
+    delay(15);
+    if ((PIND | 0b11110111) == 0b11110111)
+    {
+      //TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
+      //TCCR1B = TCCR1B | (1 << 2);
+      TCCR2B = 7;
+    }
   }
 }
 
@@ -177,10 +174,10 @@ ISR(TIMER1_COMPA_vect)
 };
 
 
-ISR(TIMER2_COMPA_vect)
+ISR(TIMER2_COMPA_vect)  
 {
   Serial.println("im Timer 2");
-  if ((PINB | 0b11111110) == 0b11111110)
+  if ((PIND | 0b11110111) == 0b11110111)
   {
     x++;
     if (x == 100)
@@ -427,17 +424,4 @@ void loop()
     }
     zwischenzeit = rtc_zeit.sec;
   }
-
-  if ((PINB | 0b11111110) == 0b11111110)
-  {
-    delay(15);
-    if ((PINB | 0b11111110) == 0b11111110)
-    {
-      //TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
-      //TCCR1B = TCCR1B | (1 << 2);
-      TCCR2B = 7;
-
-    }
-  }
-
 }
