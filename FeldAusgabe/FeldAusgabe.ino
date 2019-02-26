@@ -92,7 +92,8 @@ void setup()
   PORTD |= (1 << 3);
 
   EICRA = 0;
-  EIMSK = 0;    //Externen Interrupt am PIN3(PD3) setzen
+  EICRA|=(1<<3);
+  EIMSK = 0;    //Externen Interrupt am PIN3(PD3) wenn eine fallende Flanke auftritt
   EIMSK |= (1 << 1);
 
   TCCR1A = 0;
@@ -311,7 +312,7 @@ void sekundennachholen()
 
   sek = rtc_zeit.sec;
 
-  //FILIP
+ 
 }
 
 void sekundenanzeige_zuruecksetzen()
