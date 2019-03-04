@@ -14,7 +14,7 @@ int zwischenzeit;
 
 boolean bolean = true;
 boolean einmal = true;
-boolean isr = false;
+boolean tasteKurzGedrueckt = false;
 
 int x = 0;
 int i = 0;
@@ -28,6 +28,9 @@ int stund_MSB = 0;
 
 int temp_LSB = 0;
 int temp_MSB = 0;
+
+
+//Zeichen für LED-Matrix
 
 const long long int zahl[] =
 {
@@ -50,7 +53,7 @@ const long long int temperatur[] =
 };
 
 const long long int prozent = {0x0062640810264600};
-//define Menüzeichen aus uhr feld machen
+
 const long long int wecker_aus[] = {0xc0201090909020c0, 0x0304080b08080403};
 
 const long long int wecker_ein[] =
@@ -93,7 +96,7 @@ void setup()
 
   EICRA = 0;
   EICRA|=(1<<3);
-  EIMSK = 0;    //Externen Interrupt am PIN3(PD3) wenn eine fallende Flanke auftritt
+  EIMSK = 0;        //Externen Interrupt am PIN3(PD3) wenn eine fallende Flanke auftritt
   EIMSK |= (1 << 1);
 
   TCCR1A = 0;
@@ -203,7 +206,7 @@ ISR(TIMER2_COMPA_vect)
     //TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
     //TCCR1B = TCCR1B | (1 << 2);
 
-    isr = true;
+    tasteKurzGedrueckt = true;
   }
 };
 
@@ -233,7 +236,7 @@ void ausgabe(int device, long long int zahlen)
   }
 }
 
-void berechnen()
+void uhrzeitBerechnen()
 {
   rtc_zeit = rtc.getTime();
 
@@ -247,7 +250,7 @@ void berechnen()
   temp_MSB = (((int)rtc.getTemp()) / 10) % 10;
 }
 
-void uhrzeitanzeigen()
+void uhrzeitAnzeigen()
 {
   ausgabe(0, zahl[min_LSB]);
   ausgabe(1, zahl[min_MSB]);
@@ -256,7 +259,7 @@ void uhrzeitanzeigen()
   ausgabe(3, zahl[stund_MSB]);
 }
 
-void temperaturanzeigen()
+void temperaturAnzeigen()
 {
   ausgabe(0, temperatur[1]);
   ausgabe(1, temperatur[0]);
@@ -265,9 +268,9 @@ void temperaturanzeigen()
   ausgabe(3, zahl[temp_MSB]);
 }
 
-void sekundenanzeigen()
+void sekundenAnzeigen()
 {
-  if (rtc_zeit.sec <= 7 && rtc_zeit.sec != 0)
+  if (rtc_zeit.sec <= 7 && rtc_zeit.sec >= 1)
   {
     lc.setLed(3, 0, (rtc_zeit.sec % 8), true);
   }
@@ -303,19 +306,52 @@ void sekundenanzeigen()
   }
 }
 
-void sekundennachholen()
+void sekundenNachholen()
 {
-  int sek = 0;
-  int y = 0;
-  int anzeige = 3;
-  rtc_zeit = rtc.getTime();
+  int durchzaehlSekunde;
 
-  sek = rtc_zeit.sec;
+  for(durchzaehlSekunde = 1; durchzaehlSekunde <= rtc_zeit.sec; durchzaehlSekunde ++)
+  {
+      if (durchzaehlSekunde <= 7 && durchzaehlSekunde >= 1)
+    {
+      lc.setLed(3, 0, (durchzaehlSekunde % 8), true);
+    }
+    if (durchzaehlSekunde >= 8 && durchzaehlSekunde <= 15)
+    {
+      lc.setLed(2, 0, (durchzaehlSekunde % 8), true);
+    }
+    if (durchzaehlSekunde >= 16 && durchzaehlSekunde <= 23)
+    {
+      lc.setLed(1, 0, (durchzaehlSekunde % 8), true);
+    }
+    if (durchzaehlSekunde >= 24 && durchzaehlSekunde <= 30)
+    {
+      lc.setLed(0, 0, (durchzaehlSekunde % 8), true);
+    }
 
- 
+
+    if (durchzaehlSekunde >= 31 && durchzaehlSekunde <= 37)
+    {
+      lc.setLed(3, 7, ((durchzaehlSekunde - 30) % 8), true);
+    }
+    if (durchzaehlSekunde >= 38 && durchzaehlSekunde <= 45)
+    {
+      lc.setLed(2, 7, ((durchzaehlSekunde - 30) % 8), true);
+    }
+    if (durchzaehlSekunde >= 46 && durchzaehlSekunde <= 53)
+    {
+      lc.setLed(1, 7, ((durchzaehlSekunde - 30) % 8), true);
+    }
+    if (durchzaehlSekunde >= 54 && durchzaehlSekunde <= 60)
+    {
+      lc.setLed(0, 7, ((durchzaehlSekunde - 30) % 8), true);
+    }
+    
+  }
+
 }
 
-void sekundenanzeige_zuruecksetzen()
+void sekundenanzeigeZuruecksetzen()
 {
   delay(660);
   for (j = 0; j < 4 ; j++)
@@ -327,11 +363,11 @@ void sekundenanzeige_zuruecksetzen()
       lc.setLed(j, 7, i, false);
     }
   }
-  berechnen();
-  uhrzeitanzeigen();
+  uhrzeitBerechnen();
+  uhrzeitAnzeigen();
 }
 
-void doppelpunkt_anzeigen()
+void doppelpunktAnzeigen()
 {
   if (rtc_zeit.sec % 2 == 1)
   {
@@ -373,55 +409,50 @@ void kurzertastendruck()
   lc.clearDisplay(1);
   lc.clearDisplay(0);
 
-  uhrzeitanzeigen();
-
-  isr = false;
+  uhrzeitAnzeigen();
+  sekundenNachholen();
+  tasteKurzGedrueckt = false;
 }
 
 void loop()
 {
-  if (isr == true)
+  if (tasteKurzGedrueckt == true) //In der Funktion kurzertastendruck sind delays. Deswegen wird die Funktion im main ausgeführt
   {
     kurzertastendruck();
-    sekundennachholen();
   }
 
   rtc_zeit = rtc.getTime();
-
-  while (rtc_zeit.sec != zwischenzeit)
+  
+  while (rtc_zeit.sec != zwischenzeit)  //Bei einer änderung der Zeit wird while ausgeführt
   {
-    berechnen();
+    uhrzeitBerechnen();
 
     if (einmal == true)
     {
-      uhrzeitanzeigen();
+      uhrzeitAnzeigen();
       einmal = false;
     }
 
-    sekundenanzeigen();
+    sekundenAnzeigen();
 
-    if (rtc_zeit.sec == 14 || rtc_zeit.sec == 34 || rtc_zeit.sec == 54)
+    if (rtc_zeit.sec == 14 || rtc_zeit.sec == 34 || rtc_zeit.sec == 54)   //Temperauranzeige überdecken
     {
-      uhrzeitanzeigen();
+      uhrzeitAnzeigen();
     }
-
     else if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
     {
       lc.setLed(2, 2, 7, false);
       lc.setLed(2, 5, 7, false);
 
-      temperaturanzeigen();
+      temperaturAnzeigen();
     }
-
     else
     {
-      //Doppelpunkt anzeigen
-      doppelpunkt_anzeigen();
+      doppelpunktAnzeigen();
     }
-    //Sekundenanzeige zurücksetzen
     if (rtc_zeit.sec == 59)
     {
-      sekundenanzeige_zuruecksetzen();
+      sekundenanzeigeZuruecksetzen();
     }
     zwischenzeit = rtc_zeit.sec;
   }

@@ -6,6 +6,14 @@
 #define weckerOff   false
 #define weckerOn    true
 
+const long long int uhr = {0x3c4281b98989423c};
+
+const long long int weckwellenrechtslinks[]=
+{
+  0x0012242424140200,
+  0x0040282424244800
+};
+
 void setup() {
 
 
@@ -24,12 +32,14 @@ void loop() {
       switch (weckerZustand) {
         case weckerOn:
           weckerZustand = false;
-          //Wecker aus Symbol
+          ausgabe(1, uhr);
           break;
 
         case weckerOff:
           weckerZustand = true;
-          //Wecker ein Symbol
+          ausgabe(1, weckwellenrechtslinks[0]);
+          ausgabe(1, weckwellenrechtslinks[1]);
+          ausgabe(1, uhr);
           break;
       }
       break;
