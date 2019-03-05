@@ -78,20 +78,15 @@ boolean ledtest = LOW;
 void setup()
 {
 
-  CLKPR = 0x80;
-  CLKPR = 0x00;
+  CLKPR = 0x80; //ClockChangeEnable
+  CLKPR = 0x00; //CLK=16Mhz
 
-  DDRB = DDRB | (1 << 5);
+//Input und Outputbechaltung
+  DDRB = DDRB | (1 << 5); 
   DDRB = DDRB & ~(1 << 0);
 
   PORTB = PORTB | (1 << 0);
   PORTB = PORTB & ~(1 << 5);
-
-  Serial.begin(9600);
-  pinMode(7, OUTPUT);
-  pinMode(6, OUTPUT);
-  digitalWrite(6, LOW);
-  digitalWrite(7, ledtest);
 
   DDRD &= ~(1 << 2);
   PORTD |= (1 << 2);
@@ -99,18 +94,25 @@ void setup()
   DDRD &= ~(1 << 3);
   PORTD |= (1 << 3);
 
+  Serial.begin(9600);
+  pinMode(7, OUTPUT);
+  pinMode(6, OUTPUT);
+  digitalWrite(6, LOW);
+  digitalWrite(7, ledtest);
+
+//Externen Interrupt am PIN3(PD3) wenn eine fallende Flanke auftritt
   EICRA = 0;
   EICRA|=(1<<3);
-  EIMSK = 0;        //Externen Interrupt am PIN3(PD3) wenn eine fallende Flanke auftritt
+  EIMSK = 0;        
   EIMSK |= (1 << 1);
 
-  TCCR1A = 0;
-  TCCR1B = 0;
-  TCNT1 = 0;
+  TCCR1A = 0; //Register auf 0 setzen weil es sonst undefiniert währe
+  TCCR1B = 0; //Register auf 0 setzen weil es sonst undefiniert währe
+  TCNT1 = 0;  //Register auf 0 setzen weil es sonst undefiniert währe
 
-  TCCR2A = 0;
-  TCNT2 = 0;
-  TCCR2B = 0;
+  TCCR2A = 0; //Register auf 0 setzen weil es sonst undefiniert währe
+  TCNT2 = 0;  //Register auf 0 setzen weil es sonst undefiniert währe
+  TCCR2B = 0; //Register auf 0 setzen weil es sonst undefiniert währe
 
 
   TIMSK2 = 0;
@@ -167,7 +169,7 @@ ISR(INT1_vect)  //endlos drinnen wenn taster gedrückt bleibt
     {
       //TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
       //TCCR1B = TCCR1B | (1 << 2);
-      TCCR2B = 7;
+      TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
     }
   }
 }
@@ -194,9 +196,9 @@ ISR(TIMER2_COMPA_vect)
       PORTB = PORTB ^ (1 << 5);
 
       TCNT1 = 0;
-      TCNT2 = 0;
+      TCNT2 = 0; //Zählerstand des Timer2 zurücksetzen
 
-      TCCR2B = 0;
+      TCCR2B = 0;//Timer2 stoppen
     }
   }
   else
@@ -204,9 +206,9 @@ ISR(TIMER2_COMPA_vect)
     x = 0;
 
     TCNT1 = 0;
-    TCNT2 = 0;
+    TCNT2 = 0;  //Zählerstand des Timer2 zurücksetzen
 
-    TCCR2B = 0;
+    TCCR2B = 0; //Timer2 stoppen
 
     //TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
     //TCCR1B = TCCR1B | (1 << 2);
