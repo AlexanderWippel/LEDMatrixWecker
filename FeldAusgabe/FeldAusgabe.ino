@@ -12,14 +12,19 @@
 Time rtc_zeit;
 int zwischenzeit;
 
-boolean bolean = true;
-boolean einmal = true;
+boolean doppelpunktBoolean = true;
+boolean ersterWeckerDurchlauf = true;
 boolean tasteKurzGedrueckt = false;
 
+//Wecker Menü
+boolean weckerzustand = false;
+
+//Für schleifen
 int x = 0;
 int i = 0;
 int j = 0;
 
+//Display Aufteilung
 int min_LSB = 0;
 int min_MSB = 0;
 
@@ -371,9 +376,9 @@ void doppelpunktAnzeigen()
 {
   if (rtc_zeit.sec % 2 == 1)
   {
-    if (bolean == true)
+    if (doppelpunktBoolean == true)
     {
-      bolean = false;
+      doppelpunktBoolean = false;
     }
     lc.setLed(2, 2, 7, true);
     lc.setLed(2, 5, 7, true);
@@ -381,9 +386,9 @@ void doppelpunktAnzeigen()
 
   else
   {
-    if (bolean == false)
+    if (doppelpunktBoolean == false)
     {
-      bolean = true;
+      doppelpunktBoolean = true;
     }
     lc.setLed(2, 2, 7, false);
     lc.setLed(2, 5, 7, false);
@@ -396,11 +401,18 @@ void kurzertastendruck()
   lc.clearDisplay(2);
   lc.clearDisplay(1);
   lc.clearDisplay(0);
+  
+  weckerzustand ^= true;            //Wecker ein/aus
 
-  ganzausgabe(3, wecker_ein[0]);
-  ganzausgabe(2, wecker_ein[1]);
-  ganzausgabe(1, wecker_ein[2]);
-  ganzausgabe(0, wecker_ein[3]);
+  if(weckerzustand == true) {       //Weckersymbol ein
+    ganzausgabe(3, wecker_ein[0]);
+    ganzausgabe(2, wecker_ein[1]);
+    ganzausgabe(1, wecker_ein[2]);
+    ganzausgabe(0, wecker_ein[3]);
+  } else {                          //Weckersymbol aus
+    ganzausgabe(2, wecker_aus[0]);
+    ganzausgabe(1, wecker_aus[1]);
+  }
 
   delay(2000);
 
@@ -408,9 +420,22 @@ void kurzertastendruck()
   lc.clearDisplay(2);
   lc.clearDisplay(1);
   lc.clearDisplay(0);
+  
+  //Sofortige überschribung des geclearten Displays mit der Temp/Uhranzeige
+  rtc_zeit = rtc.getTime();  
+  if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
+  {
+    lc.setLed(2, 2, 7, false);
+    lc.setLed(2, 5, 7, false);
+     
+    temperaturAnzeigen();
+  }
+  else
+  {
+    uhrzeitAnzeigen();
+  }
 
-  uhrzeitAnzeigen();
-  sekundenNachholen();
+  sekundenNachholen();      //Alle Sekunden neu darstellen
   tasteKurzGedrueckt = false;
 }
 
@@ -427,10 +452,10 @@ void loop()
   {
     uhrzeitBerechnen();
 
-    if (einmal == true)
+    if (ersterWeckerDurchlauf == true)
     {
       uhrzeitAnzeigen();
-      einmal = false;
+      ersterWeckerDurchlauf = false;
     }
 
     sekundenAnzeigen();
@@ -450,6 +475,7 @@ void loop()
     {
       doppelpunktAnzeigen();
     }
+    
     if (rtc_zeit.sec == 59)
     {
       sekundenanzeigeZuruecksetzen();
