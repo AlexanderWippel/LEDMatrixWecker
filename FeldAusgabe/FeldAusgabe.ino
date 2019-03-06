@@ -15,6 +15,7 @@ int zwischenzeit;
 boolean doppelpunktBoolean = true;
 boolean ersterWeckerDurchlauf = true;
 boolean tasteKurzGedrueckt = false;
+boolean tasteLangeGedrueckt = false;
 
 //Wecker Menü
 boolean weckerzustand = false;
@@ -67,6 +68,22 @@ const long long int wecker_ein[] =
   0xc0241292929224c0,
   0x0324484b48482403,
   0x0001020202010000
+};
+
+const long long int weckerWeckzeitEinstellen[] =
+{
+  0x000c1ef0f01e0c00,
+  0xc0241292929224c0,
+  0x0324484b48482403,
+  0x0030780f0f783000
+};
+
+const long long int weckerUhrzeitEinstellen[] =
+{
+  0x000c1ef0f01e0c00,
+  0xc0201097979020c0,
+  0x030408ebe8080403,
+  0x0030780f0f783000
 };
 
 DS3231 rtc(SDA_PIN, SCL_PIN);
@@ -199,6 +216,7 @@ ISR(TIMER2_COMPA_vect)
       TCNT2 = 0; //Zählerstand des Timer2 zurücksetzen
 
       TCCR2B = 0;//Timer2 stoppen
+      tasteLangeGedrueckt = true;
     }
   }
   else
@@ -397,7 +415,7 @@ void doppelpunktAnzeigen()
   }
 }
 
-void kurzertastendruck()
+void kurzerTastendruck()
 {
   lc.clearDisplay(3);
   lc.clearDisplay(2);
@@ -441,11 +459,53 @@ void kurzertastendruck()
   tasteKurzGedrueckt = false;
 }
 
+void langerTastendruck()
+{
+  lc.clearDisplay(3);
+  lc.clearDisplay(2);
+  lc.clearDisplay(1);
+  lc.clearDisplay(0);
+
+  ganzausgabe(3, weckerWeckzeitEinstellen[0]);
+  ganzausgabe(2, weckerWeckzeitEinstellen[1]);
+  ganzausgabe(1, weckerWeckzeitEinstellen[2]);
+  ganzausgabe(0, weckerWeckzeitEinstellen[3]);
+
+  delay(2000);
+
+  lc.clearDisplay(3);
+  lc.clearDisplay(2);
+  lc.clearDisplay(1);
+  lc.clearDisplay(0);
+
+  //Sofortige überschribung des geclearten Displays mit der Temp/Uhranzeige
+  rtc_zeit = rtc.getTime();  
+  if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
+  {
+    lc.setLed(2, 2, 7, false);
+    lc.setLed(2, 5, 7, false);
+     
+    temperaturAnzeigen();
+  }
+  else
+  {
+    uhrzeitAnzeigen();
+  }
+
+  sekundenNachholen();      //Alle Sekunden neu darstellen
+  tasteLangeGedrueckt = false;
+}
+
 void loop()
 {
-  if (tasteKurzGedrueckt == true) //In der Funktion kurzertastendruck sind delays. Deswegen wird die Funktion im main ausgeführt
+  if (tasteKurzGedrueckt == true) //In der Funktion kurzerTastendruck sind delays. Deswegen wird die Funktion im main ausgeführt
   {
-    kurzertastendruck();
+    kurzerTastendruck();
+  }
+
+  if (tasteLangeGedrueckt == true)
+  {
+    langerTastendruck();
   }
 
   rtc_zeit = rtc.getTime();
