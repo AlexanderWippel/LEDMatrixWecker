@@ -98,8 +98,8 @@ void setup()
   CLKPR = 0x80; //ClockChangeEnable
   CLKPR = 0x00; //CLK=16Mhz
 
-//Input und Outputbechaltung
-  DDRB = DDRB | (1 << 5); 
+  //Input und Outputbechaltung
+  DDRB = DDRB | (1 << 5);
   DDRB = DDRB & ~(1 << 0);
 
   PORTB = PORTB | (1 << 0);
@@ -117,10 +117,10 @@ void setup()
   digitalWrite(6, LOW);
   digitalWrite(7, ledtest);
 
-//Externen Interrupt am PIN3(PD3) wenn eine fallende Flanke auftritt
+  //Externen Interrupt am PIN3(PD3) wenn eine fallende Flanke auftritt
   EICRA = 0;
-  EICRA|=(1<<3);
-  EIMSK = 0;        
+  EICRA |= (1 << 3);
+  EIMSK = 0;
   EIMSK |= (1 << 1);
 
   TCCR1A = 0; //Register auf 0 setzen weil es sonst undefiniert währe
@@ -130,15 +130,11 @@ void setup()
   TCCR2A = 0; //Register auf 0 setzen weil es sonst undefiniert währe
   TCNT2 = 0;  //Register auf 0 setzen weil es sonst undefiniert währe
   TCCR2B = 0; //Register auf 0 setzen weil es sonst undefiniert währe
-
-
-  TIMSK2 = 0;
-
-  SMCR = 0;
-  SMCR |= (1 << 0);
-
-  TCCR1B = TCCR1B & ~(1 << 0); //stopp
-  TCCR1B = TCCR1B & ~(1 << 2);
+  TIMSK2 = 0; //Register auf 0 setzen weil es sonst undefiniert währe
+  
+//Timer 1 stopp
+  TCCR1B = TCCR1B & ~(1 << 0); 
+  TCCR1B = TCCR1B & ~(1 << 2);  
   TCCR1B = TCCR1B & ~(1 << 1);
 
   TCCR1A = TCCR1A & ~(1 << 7); //normaler Pin modus
@@ -149,12 +145,12 @@ void setup()
   TCCR1B = TCCR1B | (1 << 3);
   TCCR1B = TCCR1B & ~(1 << 4);
 
-  OCR1A = 15600; //OCR1A gesetzt
-  OCR2A = 156;
+  OCR1A = 15600; //Timer2-COMPA-Interrupt alle 1s
+  OCR2A = 156;   //Timer2-COMPA-Interrupt alle 10ms
 
   TIMSK1 = TIMSK1 | (1 << 1); //Interrupt lokal aktiviert
-  TIMSK2 = TIMSK2 | (1 << 1);
-  SREG = SREG | (1 << 7); //Interrupt global freigeschaltet
+  TIMSK2 = TIMSK2 | (1 << 1); //Timer2 COMPA-Interrupt enable
+  SREG = SREG | (1 << 7);    //Interrupt global freigeschaltet
 
 
   rtc.begin();
@@ -177,7 +173,6 @@ void setup()
 ISR(INT1_vect)  //endlos drinnen wenn taster gedrückt bleibt
 {
   Serial.println("im INT1");
-  SMCR = 0;
 
   if ((PIND | 0b11110111) == 0b11110111)
   {
@@ -195,14 +190,14 @@ ISR(TIMER1_COMPA_vect)
 {
   Serial.println("im Timer 1");
   TCNT1 = 0;
-  TCCR1B = TCCR1B & ~(1 << 0); //stopp
+  TCCR1B = TCCR1B & ~(1 << 0); //Timer 1 stopp
   TCCR1B = TCCR1B & ~(1 << 2);
   TCCR1B = TCCR1B & ~(1 << 1);
 
 };
 
 
-ISR(TIMER2_COMPA_vect)  
+ISR(TIMER2_COMPA_vect)
 {
   Serial.println("im Timer 2");
   if ((PIND | 0b11110111) == 0b11110111)
@@ -212,7 +207,7 @@ ISR(TIMER2_COMPA_vect)
     {
       PORTB = PORTB ^ (1 << 5);
 
-      TCNT1 = 0;
+      TCNT1 = 0; //Zählerstand des Timer1 zurücksetzen
       TCNT2 = 0; //Zählerstand des Timer2 zurücksetzen
 
       TCCR2B = 0;//Timer2 stoppen
@@ -223,7 +218,7 @@ ISR(TIMER2_COMPA_vect)
   {
     x = 0;
 
-    TCNT1 = 0;
+    TCNT1 = 0;  //Zählerstand des Timer1 zurücksetzen
     TCNT2 = 0;  //Zählerstand des Timer2 zurücksetzen
 
     TCCR2B = 0; //Timer2 stoppen
@@ -335,9 +330,9 @@ void sekundenNachholen()
 {
   int durchzaehlSekunde;
 
-  for(durchzaehlSekunde = 1; durchzaehlSekunde <= rtc_zeit.sec; durchzaehlSekunde ++)
+  for (durchzaehlSekunde = 1; durchzaehlSekunde <= rtc_zeit.sec; durchzaehlSekunde ++)
   {
-      if (durchzaehlSekunde <= 7 && durchzaehlSekunde >= 1)
+    if (durchzaehlSekunde <= 7 && durchzaehlSekunde >= 1)
     {
       lc.setLed(3, 0, (durchzaehlSekunde % 8), true);
     }
@@ -371,7 +366,7 @@ void sekundenNachholen()
     {
       lc.setLed(0, 7, ((durchzaehlSekunde - 30) % 8), true);
     }
-    
+
   }
 
 }
@@ -421,10 +416,10 @@ void kurzerTastendruck()
   lc.clearDisplay(2);
   lc.clearDisplay(1);
   lc.clearDisplay(0);
-  
+
   weckerzustand ^= true;            //Wecker ein/aus
 
-  if(weckerzustand == true) {       //Weckersymbol ein
+  if (weckerzustand == true) {      //Weckersymbol ein
     ganzausgabe(3, wecker_ein[0]);
     ganzausgabe(2, wecker_ein[1]);
     ganzausgabe(1, wecker_ein[2]);
@@ -440,14 +435,14 @@ void kurzerTastendruck()
   lc.clearDisplay(2);
   lc.clearDisplay(1);
   lc.clearDisplay(0);
-  
+
   //Sofortige überschribung des geclearten Displays mit der Temp/Uhranzeige
-  rtc_zeit = rtc.getTime();  
+  rtc_zeit = rtc.getTime();
   if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
   {
     lc.setLed(2, 2, 7, false);
     lc.setLed(2, 5, 7, false);
-     
+
     temperaturAnzeigen();
   }
   else
@@ -479,12 +474,12 @@ void langerTastendruck()
   lc.clearDisplay(0);
 
   //Sofortige überschribung des geclearten Displays mit der Temp/Uhranzeige
-  rtc_zeit = rtc.getTime();  
+  rtc_zeit = rtc.getTime();
   if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
   {
     lc.setLed(2, 2, 7, false);
     lc.setLed(2, 5, 7, false);
-     
+
     temperaturAnzeigen();
   }
   else
@@ -509,7 +504,7 @@ void loop()
   }
 
   rtc_zeit = rtc.getTime();
-  
+
   while (rtc_zeit.sec != zwischenzeit)  //Bei einer änderung der Zeit wird while ausgeführt
   {
     uhrzeitBerechnen();
@@ -537,7 +532,7 @@ void loop()
     {
       doppelpunktAnzeigen();
     }
-    
+
     if (rtc_zeit.sec == 59)
     {
       sekundenanzeigeZuruecksetzen();
