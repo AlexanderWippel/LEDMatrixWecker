@@ -35,6 +35,8 @@ int stund_MSB = 0;
 int temp_LSB = 0;
 int temp_MSB = 0;
 
+//Taster Variable
+int t = 0;
 
 //Zeichen für LED-Matrix
 
@@ -111,17 +113,32 @@ void setup()
   DDRD &= ~(1 << 3);
   PORTD |= (1 << 3);
 
+
   Serial.begin(9600);
   pinMode(7, OUTPUT);
   pinMode(6, OUTPUT);
   digitalWrite(6, LOW);
   digitalWrite(7, ledtest);
 
+  //Externen Interrupt am PIN8(PB0) wenn die Logik toggelt
+  DDRB &= ~(1 << 0);
+  PORTB |= (1 << 0);
+
+  PCICR = 0;
+  PCICR |= (1 << 0);
+  PCMSK0 = 0;
+  PCMSK0 |= (1 << 0);
+
   //Externen Interrupt am PIN3(PD3) wenn eine fallende Flanke auftritt
   EICRA = 0;
   EICRA |= (1 << 3);
   EIMSK = 0;
   EIMSK |= (1 << 1);
+
+  //Externen Interrupt am PIN2(PD2) wenn einee fallende Flanke auftritt
+  EICRA |= (1 << 1);
+  EIMSK |= (1 << 0);
+
 
   TCCR1A = 0; //Register auf 0 setzen weil es sonst undefiniert währe
   TCCR1B = 0; //Register auf 0 setzen weil es sonst undefiniert währe
@@ -131,10 +148,10 @@ void setup()
   TCNT2 = 0;  //Register auf 0 setzen weil es sonst undefiniert währe
   TCCR2B = 0; //Register auf 0 setzen weil es sonst undefiniert währe
   TIMSK2 = 0; //Register auf 0 setzen weil es sonst undefiniert währe
-  
-//Timer 1 stopp
-  TCCR1B = TCCR1B & ~(1 << 0); 
-  TCCR1B = TCCR1B & ~(1 << 2);  
+
+  //Timer 1 stopp
+  TCCR1B = TCCR1B & ~(1 << 0);
+  TCCR1B = TCCR1B & ~(1 << 2);
   TCCR1B = TCCR1B & ~(1 << 1);
 
   TCCR1A = TCCR1A & ~(1 << 7); //normaler Pin modus
@@ -145,8 +162,8 @@ void setup()
   TCCR1B = TCCR1B | (1 << 3);
   TCCR1B = TCCR1B & ~(1 << 4);
 
-  OCR1A = 15600; //Timer2-COMPA-Interrupt alle 1s
-  OCR2A = 156;   //Timer2-COMPA-Interrupt alle 10ms
+  OCR1A = 8000; //Timer1-COMPA-Interrupt alle bissl uber 500ms  dient dazu ein schnell wiederholtes Drücken zu vermeiden
+  OCR2A = 156; //Timer2-COMPA-Interrupt alle 10ms
 
   TIMSK1 = TIMSK1 | (1 << 1); //Interrupt lokal aktiviert
   TIMSK2 = TIMSK2 | (1 << 1); //Timer2 COMPA-Interrupt enable
@@ -169,56 +186,95 @@ void setup()
 
 };
 
-
-ISR(INT1_vect)  //endlos drinnen wenn taster gedrückt bleibt
+ISR(INT0_vect)  //geht immer 2mal hinein
 {
-  Serial.println("im INT1");
-
-  if ((PIND | 0b11110111) == 0b11110111)
+  EIMSK = 0;  //Alle INT-Interrupts ausschalten
+  TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
+  Serial.println("im INT0");
+  t = 0b11111011;
+  if ((PIND | t) == t)
   {
     delay(15);
-    if ((PIND | 0b11110111) == 0b11110111)
+    if ((PIND | t) == t)
     {
-      //TCCR1B = TCCR1B | (1 << 0); //Teiler auf 1024
-      //TCCR1B = TCCR1B | (1 << 2);
       TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
     }
   }
 }
 
+ISR(INT1_vect)  //geht immer 2mal hinein
+{
+  EIMSK = 0;  //Alle INT-Interrupts ausschalten
+  TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
+  Serial.println("im INT1");
+
+  t = 0b11110111;
+
+  if ((PIND | t) == t)
+  {
+    delay(15);
+    if ((PIND | t) == t)
+    {
+      Serial.println("INT1 wird ausgeführt");
+      TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
+    }
+  }
+}
+
+ISR(PCINT0_vect)
+{
+
+  TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
+  Serial.println("im PCINT0");
+
+  t = 0b11111110;
+
+  if ((PINB | t) == t)
+  {
+    delay(15);
+    if ((PINB | t) == t)
+    {
+
+      TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
+    }
+  }
+  PCMSK0 &= ~(1 << 0); //PCINT0 ausschalten
+}
+
 ISR(TIMER1_COMPA_vect)
 {
   Serial.println("im Timer 1");
-  TCNT1 = 0;
-  TCCR1B = TCCR1B & ~(1 << 0); //Timer 1 stopp
-  TCCR1B = TCCR1B & ~(1 << 2);
-  TCCR1B = TCCR1B & ~(1 << 1);
-
-};
-
+  EIMSK = 3;      //Alle INT-Interrupts einschalten
+  PCMSK0 |= (1 << 0); //PCINT0 einschalten
+  TCNT1 = 0;      //Zählerstand des Timer1 zurücksetzen
+  TCCR1B = 0;     //Timer 1 ausschalten
+}
 
 ISR(TIMER2_COMPA_vect)
 {
   Serial.println("im Timer 2");
-  if ((PIND | 0b11110111) == 0b11110111)
+  if ((PIND | t) == t || (PINB | t) == t)
   {
     x++;
     if (x == 100)
     {
-      PORTB = PORTB ^ (1 << 5);
-
-      TCNT1 = 0; //Zählerstand des Timer1 zurücksetzen
+      x = 0;
+      Serial.println("Taster lange gedrückt");
       TCNT2 = 0; //Zählerstand des Timer2 zurücksetzen
 
       TCCR2B = 0;//Timer2 stoppen
       tasteLangeGedrueckt = true;
+
+      PCMSK0 &= ~(1 << 0); //PCINT0 ausschalten
+      EIMSK = 0;  //Alle INT-Interrupts ausschalten
+      TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
     }
   }
   else
   {
+    Serial.println("Taster kurz gedrückt");
     x = 0;
 
-    TCNT1 = 0;  //Zählerstand des Timer1 zurücksetzen
     TCNT2 = 0;  //Zählerstand des Timer2 zurücksetzen
 
     TCCR2B = 0; //Timer2 stoppen
@@ -229,7 +285,6 @@ ISR(TIMER2_COMPA_vect)
     tasteKurzGedrueckt = true;
   }
 };
-
 
 
 void ganzausgabe(int device, long long int zahlen)
@@ -412,6 +467,8 @@ void doppelpunktAnzeigen()
 
 void kurzerTastendruck()
 {
+  tasteKurzGedrueckt = false;
+
   lc.clearDisplay(3);
   lc.clearDisplay(2);
   lc.clearDisplay(1);
@@ -451,11 +508,12 @@ void kurzerTastendruck()
   }
 
   sekundenNachholen();      //Alle Sekunden neu darstellen
-  tasteKurzGedrueckt = false;
 }
 
 void langerTastendruck()
 {
+  tasteLangeGedrueckt = false;
+
   lc.clearDisplay(3);
   lc.clearDisplay(2);
   lc.clearDisplay(1);
@@ -488,7 +546,6 @@ void langerTastendruck()
   }
 
   sekundenNachholen();      //Alle Sekunden neu darstellen
-  tasteLangeGedrueckt = false;
 }
 
 void loop()
@@ -500,7 +557,15 @@ void loop()
 
   if (tasteLangeGedrueckt == true)
   {
+    PCMSK0 &= ~(1 << 0); //PCINT0 ausschalten
+    EIMSK = 0;  //Alle INT-Interrupts ausschalten
+
+    TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
     langerTastendruck();
+
+    PCMSK0 &= ~(1 << 0); //PCINT0 ausschalten
+    EIMSK = 0;  //Alle INT-Interrupts ausschalten
+    TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
   }
 
   rtc_zeit = rtc.getTime();
