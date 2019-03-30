@@ -10,6 +10,10 @@
 #define SCL_PIN A1
 
 Time rtc_zeit;
+  
+Time weckzeit;
+//  weckzeit.hour = 6;
+//  weckzeit.min = 0;
 int zwischenzeit;
 
 boolean doppelpunktBoolean = true;
@@ -28,12 +32,15 @@ int j = 0;
 //Display Aufteilung
 int min_LSB = 0;
 int min_MSB = 0;
-
 int stund_LSB = 0;
 int stund_MSB = 0;
-
 int temp_LSB = 0;
 int temp_MSB = 0;
+
+int minWeckzeit_LSB;
+int minWeckzeit_MSB;
+int stundeWeckzeit_LSB;
+int stundeWeckzeit_MSB;
 
 //Taster Variable
 int t = 0;
@@ -113,7 +120,7 @@ void setup()
   DDRD &= ~(1 << 3);
   PORTD |= (1 << 3);
 
-
+  
   Serial.begin(9600);
   pinMode(7, OUTPUT);
   pinMode(6, OUTPUT);
@@ -172,6 +179,9 @@ void setup()
 
   rtc.begin();
   rtc.setTime(12, 10, 0);
+  
+  weckzeit.hour = 6;  //Weckzeit zum Einstellen standarmäßig auf 6:00
+  weckzeit.min = 0;
 
   int devices = lc.getDeviceCount();
 
@@ -531,7 +541,9 @@ void langerTastendruck()
   lc.clearDisplay(1);
   lc.clearDisplay(0);
 
-  //Sofortige überschribung des geclearten Displays mit der Temp/Uhranzeige
+  weckzeitEinstellen();
+  
+  //Sofortige Überschribung des geclearten Displays mit der Temp/Uhranzeige
   rtc_zeit = rtc.getTime();
   if (rtc_zeit.sec >= 10 && rtc_zeit.sec <= 13 || rtc_zeit.sec >= 30 && rtc_zeit.sec <= 33 || rtc_zeit.sec >= 50 && rtc_zeit.sec <= 53)
   {
@@ -546,6 +558,27 @@ void langerTastendruck()
   }
 
   sekundenNachholen();      //Alle Sekunden neu darstellen
+}
+
+void weckzeitEinstellen() {
+  boolean weckzeitEingestellt = false;
+  do {
+    //Weckzeit zum Darstellen auf den Displays berechnen
+    minWeckzeit_LSB = (weckzeit.min % 10);
+    minWeckzeit_MSB = (weckzeit.min / 10) % 10;
+    
+    stundeWeckzeit_LSB = (weckzeit.hour % 10);
+    stundeWeckzeit_MSB = (weckzeit.hour / 10) % 10;
+  
+    //Ausgabe der Weckzeit zum einstellen
+    ausgabe(0, zahl[minWeckzeit_LSB]);
+    ausgabe(1, zahl[minWeckzeit_MSB]);
+  
+    ausgabe(2, zahl[stundeWeckzeit_LSB]);
+    ausgabe(3, zahl[stundeWeckzeit_MSB]);
+  } while (weckzeitEingestellt == false);
+
+  
 }
 
 void loop()
