@@ -561,7 +561,12 @@ void langerTastendruck()
 }
 
 void weckzeitEinstellen() {
-  boolean weckzeitEingestellt = false;
+
+  tasteKurzGedrueckt = false;  //Um Tastendruck währen der WeckzeitEinstellen-Anzeige nicht möglich zu machen
+  lc.setLed(2, 2, 7, true);     // Doppelpunkt am Anfang einblenden
+  lc.setLed(2, 5, 7, true);
+  boolean weckzeitEingestellt = false;  //Wenn auf false gesetzt, dann Weckzeit eingestellt und raus aus der do-while Schleife
+  
   do {
     //Weckzeit zum Darstellen auf den Displays berechnen
     minWeckzeit_LSB = (weckzeit.min % 10);
@@ -569,15 +574,46 @@ void weckzeitEinstellen() {
     
     stundeWeckzeit_LSB = (weckzeit.hour % 10);
     stundeWeckzeit_MSB = (weckzeit.hour / 10) % 10;
-  
-    //Ausgabe der Weckzeit zum einstellen
-    ausgabe(0, zahl[minWeckzeit_LSB]);
-    ausgabe(1, zahl[minWeckzeit_MSB]);
-  
-    ausgabe(2, zahl[stundeWeckzeit_LSB]);
-    ausgabe(3, zahl[stundeWeckzeit_MSB]);
-  } while (weckzeitEingestellt == false);
 
+    //Ausgabe der Weckzeit zum einstellen
+
+    //Stunden einstellen
+    if(tasteKurzGedrueckt == false)
+    {
+      ausgabe(0, zahl[minWeckzeit_LSB]);
+      ausgabe(1, zahl[minWeckzeit_MSB]);
+  
+      ausgabe(2, zahl[stundeWeckzeit_LSB]);
+      ausgabe(3, zahl[stundeWeckzeit_MSB]);
+      
+      delay(625);
+      lc.clearDisplay(3);
+      lc.clearDisplay(2);
+      
+      lc.setLed(2, 2, 7, true);
+      lc.setLed(2, 5, 7, true);
+
+      delay(375);
+      
+    } else {
+            ausgabe(0, zahl[minWeckzeit_LSB]);
+      ausgabe(1, zahl[minWeckzeit_MSB]);
+  
+      ausgabe(2, zahl[stundeWeckzeit_LSB]);
+      ausgabe(3, zahl[stundeWeckzeit_MSB]);
+      
+      delay(625);
+      lc.clearDisplay(1);
+      lc.clearDisplay(0);
+      
+      lc.setLed(2, 2, 7, true);
+      lc.setLed(2, 5, 7, true);
+
+      delay(375);
+    }
+    
+  } while (weckzeitEingestellt == false);
+  tasteKurzGedrueckt = false;  //taste zurücksetzen
   
 }
 
