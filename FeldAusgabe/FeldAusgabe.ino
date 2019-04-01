@@ -99,8 +99,6 @@ DS3231 rtc(SDA_PIN, SCL_PIN);
 
 LedControl lc = LedControl(DIN_PIN, CLK_PIN, CS_PIN, MAXDEVICES);
 
-boolean ledtest = LOW;
-
 void setup()
 {
 
@@ -124,8 +122,10 @@ void setup()
   Serial.begin(9600);
   pinMode(7, OUTPUT);
   pinMode(6, OUTPUT);
+  pinMode(5,OUTPUT);
   digitalWrite(6, LOW);
-  digitalWrite(7, ledtest);
+  digitalWrite(7, LOW);
+  digitalWrite(5,LOW);
 
   //Externen Interrupt am PIN8(PB0) wenn die Logik toggelt
   DDRB &= ~(1 << 0);
@@ -207,6 +207,7 @@ ISR(INT0_vect)  //geht immer 2mal hinein
     delay(15);
     if ((PIND | t) == t)
     {
+      Serial.println("INT0 wird ausgeführt");
       TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
     }
   }
