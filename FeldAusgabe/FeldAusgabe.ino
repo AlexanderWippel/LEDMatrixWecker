@@ -563,6 +563,7 @@ void langerTastendruck()
 void weckzeitEinstellen() {
 
   tasteKurzGedrueckt = false;  //Um Tastendruck währen der WeckzeitEinstellen-Anzeige nicht möglich zu machen
+  int tastendruckAnz = 0;
   lc.setLed(2, 2, 7, true);     // Doppelpunkt am Anfang einblenden
   lc.setLed(2, 5, 7, true);
   boolean weckzeitEingestellt = false;  //Wenn auf false gesetzt, dann Weckzeit eingestellt und raus aus der do-while Schleife
@@ -576,41 +577,36 @@ void weckzeitEinstellen() {
     stundeWeckzeit_MSB = (weckzeit.hour / 10) % 10;
 
     //Ausgabe der Weckzeit zum einstellen
+    ausgabe(0, zahl[minWeckzeit_LSB]);      //Minuten anzeigen
+    ausgabe(1, zahl[minWeckzeit_MSB]);
 
-    //Stunden einstellen
-    if(tasteKurzGedrueckt == false)
+    ausgabe(2, zahl[stundeWeckzeit_LSB]);   //Stunden anzeigen
+    ausgabe(3, zahl[stundeWeckzeit_MSB]);
+    delay(625);
+
+    //Wie oft wurde der Taster gedrückt
+    if(tasteKurzGedrueckt == true && tastendruckAnz == 0) {
+      tastendruckAnz = 1;
+      tasteKurzGedrueckt = false;
+    } else if (tasteKurzGedrueckt == true && tastendruckAnz == 1) {
+      tastendruckAnz = 2;
+      tasteKurzGedrueckt = false;
+    }
+    
+    if(tastendruckAnz == 0)                   //Stunden löschen
     {
-      ausgabe(0, zahl[minWeckzeit_LSB]);
-      ausgabe(1, zahl[minWeckzeit_MSB]);
-  
-      ausgabe(2, zahl[stundeWeckzeit_LSB]);
-      ausgabe(3, zahl[stundeWeckzeit_MSB]);
-      
-      delay(625);
       lc.clearDisplay(3);
       lc.clearDisplay(2);
-      
-      lc.setLed(2, 2, 7, true);
-      lc.setLed(2, 5, 7, true);
-
-      delay(375);
-      
-    } else {
-            ausgabe(0, zahl[minWeckzeit_LSB]);
-      ausgabe(1, zahl[minWeckzeit_MSB]);
-  
-      ausgabe(2, zahl[stundeWeckzeit_LSB]);
-      ausgabe(3, zahl[stundeWeckzeit_MSB]);
-      
-      delay(625);
+    } else if (tastendruckAnz == 1) {    //Minuten löschen
       lc.clearDisplay(1);
       lc.clearDisplay(0);
-      
-      lc.setLed(2, 2, 7, true);
-      lc.setLed(2, 5, 7, true);
-
-      delay(375);
+    } else if (tastendruckAnz == 2) {    //zurück zur Anzeige der Uhrzeit
+      weckzeitEingestellt = true;
     }
+    
+    lc.setLed(2, 2, 7, true);       //Doppelpunkt wieder anzeigen
+    lc.setLed(2, 5, 7, true);
+    delay(375);
     
   } while (weckzeitEingestellt == false);
   tasteKurzGedrueckt = false;  //taste zurücksetzen
