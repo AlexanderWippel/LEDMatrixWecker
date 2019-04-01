@@ -1,3 +1,8 @@
+//Main-Taster  am PIN3
+//Plus-Taster  am PIN8
+//Minus-Taster am PIN2
+
+
 #include <LedControl.h>
 #include <DS3231.h>
 
@@ -10,10 +15,7 @@
 #define SCL_PIN A1
 
 Time rtc_zeit;
-  
 Time weckzeit;
-//  weckzeit.hour = 6;
-//  weckzeit.min = 0;
 int zwischenzeit;
 
 boolean doppelpunktBoolean = true;
@@ -23,6 +25,7 @@ boolean tasteLangeGedrueckt = false;
 
 //Wecker Menü
 boolean weckerzustand = false;
+int einstellzeit=0;
 
 //Für schleifen
 int x = 0;
@@ -127,7 +130,7 @@ void setup()
   digitalWrite(7, LOW);
   digitalWrite(5,LOW);
 
-  //Externen Interrupt am PIN8(PB0) wenn die Logik toggelt
+  //Externen Interrupt am PIN8(PB0) wenn die Logik toggelt              Plus-Taster
   DDRB &= ~(1 << 0);
   PORTB |= (1 << 0);
 
@@ -136,13 +139,13 @@ void setup()
   PCMSK0 = 0;
   PCMSK0 |= (1 << 0);
 
-  //Externen Interrupt am PIN3(PD3) wenn eine fallende Flanke auftritt
+  //Externen Interrupt am PIN3(PD3) wenn eine fallende Flanke auftritt    Main-Taster
   EICRA = 0;
   EICRA |= (1 << 3);
   EIMSK = 0;
   EIMSK |= (1 << 1);
 
-  //Externen Interrupt am PIN2(PD2) wenn einee fallende Flanke auftritt
+  //Externen Interrupt am PIN2(PD2) wenn einee fallende Flanke auftritt   Minus-Taster
   EICRA |= (1 << 1);
   EIMSK |= (1 << 0);
 
@@ -213,7 +216,7 @@ ISR(INT0_vect)  //geht immer 2mal hinein
   }
 }
 
-ISR(INT1_vect)  //geht immer 2mal hinein
+ISR(INT1_vect)  //Main Taster
 {
   EIMSK = 0;  //Alle INT-Interrupts ausschalten
   TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
@@ -237,7 +240,7 @@ ISR(PCINT0_vect)
 
   TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
   Serial.println("im PCINT0");
-
+  
   t = 0b11111110;
 
   if ((PINB | t) == t)
@@ -245,7 +248,14 @@ ISR(PCINT0_vect)
     delay(15);
     if ((PINB | t) == t)
     {
-
+      if(einstellzeit<59)
+       {
+        einstellzeit++;
+       }
+        else
+        {
+          einstellzeit=0;
+        }
       TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
     }
   }
@@ -264,7 +274,7 @@ ISR(TIMER1_COMPA_vect)
 ISR(TIMER2_COMPA_vect)
 {
   Serial.println("im Timer 2");
-  if ((PIND | t) == t || (PINB | t) == t)
+  if ((PIND | t) == t || (PIND | t) == t || (PINB | t) == t || (PINB | t) == t)
   {
     x++;
     if (x == 100)
@@ -571,8 +581,8 @@ void weckzeitEinstellen() {
   
   do {
     //Weckzeit zum Darstellen auf den Displays berechnen
-    minWeckzeit_LSB = (weckzeit.min % 10);
-    minWeckzeit_MSB = (weckzeit.min / 10) % 10;
+    minWeckzeit_LSB = (einstellzeit % 10);
+    minWeckzeit_MSB = (einstellzeit / 10) % 10;
     
     stundeWeckzeit_LSB = (weckzeit.hour % 10);
     stundeWeckzeit_MSB = (weckzeit.hour / 10) % 10;
