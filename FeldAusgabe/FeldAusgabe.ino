@@ -218,24 +218,30 @@ ISR(INT0_vect)  //geht immer 2mal hinein
       Serial.println("INT0 wird ausgeführt");
       if (tastendruckAnz == 1)
       {
-        if (weckzeit.min < 59 && weckzeit.min >=0)
+        if (weckzeit.min <= 59 && weckzeit.min >= 0)
         {
-          weckzeit.min--;
-        }
-        else
-        {
-          weckzeit.min = 59;
+          if(weckzeit.min <=0)
+          {
+            weckzeit.min=59;
+          }
+          else
+          {
+            weckzeit.min--;
+          }
         }
       }
-      else if(tastendruckAnz == 0)
+      else if (tastendruckAnz == 0)
       {
-        if (weckzeit.hour < 23 && weckzeit.hour >=0)
+        if (weckzeit.hour <= 23 && weckzeit.hour >= 0)
         {
-          weckzeit.hour--;
-        }
-        else
-        {
-          weckzeit.hour = 23;
+          if (weckzeit.hour <= 0)
+          {
+            weckzeit.hour = 23;
+          }
+          else
+          {
+            weckzeit.hour--;
+          }
         }
       }
       //TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
@@ -275,32 +281,29 @@ ISR(PCINT0_vect)
     delay(15);
     if ((PINB | t) == t)
     {
-      if (tastendruckAnz == 1)
-      {
+      /*if (tastendruckAnz == 1)
+        {
         if (weckzeit.min < 59)
         {
-          
           weckzeit.min++;
         }
         else
         {
-         
+
           weckzeit.min = 0;
         }
-      }
-      else if(tastendruckAnz == 0)
-      {
+        }
+        else if(tastendruckAnz == 0)
+        {
         if (weckzeit.hour < 23)
         {
-          //einstellzeit++;
           weckzeit.hour++;
         }
         else
         {
-          //einstellzeit=0;
           weckzeit.hour = 0;
         }
-      }
+        }*/
       //TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
     }
   }
@@ -655,12 +658,12 @@ void weckzeitEinstellen() {
       lc.clearDisplay(3);
       lc.clearDisplay(2);
     } else if (tastendruckAnz == 1)
-    {    //Minuten löschen
+    { //Minuten löschen
       lc.clearDisplay(1);
       lc.clearDisplay(0);
     } else if (tastendruckAnz == 2)
-    {    //zurück zur Anzeige der Uhrzeit
-      tastendruckAnz=0;
+    { //zurück zur Anzeige der Uhrzeit
+      tastendruckAnz = 0;
       weckzeitEingestellt = true;
     }
 
