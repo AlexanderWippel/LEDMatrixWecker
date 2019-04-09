@@ -30,7 +30,7 @@ int einstellzeit = 0;
 
 //Für schleifen
 int x = 0;
-unsigned long int i = 0;
+int i = 0;
 int j = 0;
 
 unsigned long currentMillis = millis();
