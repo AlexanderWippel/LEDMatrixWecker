@@ -24,6 +24,9 @@ boolean tasteKurzGedrueckt = false;
 boolean tasteLangeGedrueckt = false;
 int tastendruckAnz = 0;
 
+boolean weckzeitEingestellt = true;  //Wenn auf false gesetzt, dann Weckzeit eingestellt und raus aus der do-while Schleife
+boolean uhrzeitEingestellt = true;  //Wenn auf false gesetzt, dann Uhrzeit eingestellt und raus aus der do-while Schleife
+
 //Wecker Menü
 boolean weckerzustand = false;
 int einstellzeit = 0;
@@ -32,10 +35,6 @@ int einstellzeit = 0;
 int x = 0;
 int i = 0;
 int j = 0;
-
-unsigned long currentMillis = millis();
-unsigned long previousMillis = 0;
-const long interval = 450;
 
 //Display Aufteilung
 int min_LSB = 0;
@@ -196,7 +195,7 @@ void setup()
   for (int address = 0; address < devices; address++)
   {
     lc.shutdown(address, false);
-    lc.setIntensity(address, 2);
+    lc.setIntensity(address, 5);
     lc.clearDisplay(address);
   };
   rtc_zeit = rtc.getTime();
@@ -216,35 +215,39 @@ ISR(INT0_vect)  //geht immer 2mal hinein
     if ((PIND | t) == t)
     {
       Serial.println("INT0 wird ausgeführt");
-      if (tastendruckAnz == 1)
+      if (weckzeitEingestellt == false)
       {
-        if (weckzeit.min <= 59 && weckzeit.min >= 0)
+
+
+        if (tastendruckAnz == 1)
         {
-          if(weckzeit.min <=0)
+          if (weckzeit.min <= 59 && weckzeit.min >= 0)
           {
-            weckzeit.min=59;
+            if (weckzeit.min <= 0)
+            {
+              weckzeit.min = 59;
+            }
+            else
+            {
+              weckzeit.min--;
+            }
           }
-          else
+        }
+        else if (tastendruckAnz == 0)
+        {
+          if (weckzeit.hour <= 23 && weckzeit.hour >= 0)
           {
-            weckzeit.min--;
+            if (weckzeit.hour <= 0)
+            {
+              weckzeit.hour = 23;
+            }
+            else
+            {
+              weckzeit.hour--;
+            }
           }
         }
       }
-      else if (tastendruckAnz == 0)
-      {
-        if (weckzeit.hour <= 23 && weckzeit.hour >= 0)
-        {
-          if (weckzeit.hour <= 0)
-          {
-            weckzeit.hour = 23;
-          }
-          else
-          {
-            weckzeit.hour--;
-          }
-        }
-      }
-      //TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
     }
   }
 }
@@ -263,7 +266,10 @@ ISR(INT1_vect)  //Main Taster
     if ((PIND | t) == t)
     {
       Serial.println("INT1 wird ausgeführt");
+
+
       TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
+
     }
   }
 }
@@ -281,30 +287,32 @@ ISR(PCINT0_vect)
     delay(15);
     if ((PINB | t) == t)
     {
-      /*if (tastendruckAnz == 1)
-        {
-        if (weckzeit.min < 59)
-        {
-          weckzeit.min++;
-        }
-        else
-        {
+      if (weckzeitEingestellt == false)
+      {
 
-          weckzeit.min = 0;
-        }
-        }
-        else if(tastendruckAnz == 0)
+        if (tastendruckAnz == 1)
         {
-        if (weckzeit.hour < 23)
-        {
-          weckzeit.hour++;
+          if (weckzeit.min < 59)
+          {
+            weckzeit.min++;
+          }
+          else
+          {
+            weckzeit.min = 0;
+          }
         }
-        else
+        else if (tastendruckAnz == 0)
         {
-          weckzeit.hour = 0;
+          if (weckzeit.hour < 23)
+          {
+            weckzeit.hour++;
+          }
+          else
+          {
+            weckzeit.hour = 0;
+          }
         }
-        }*/
-      //TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
+      }
     }
   }
   PCMSK0 &= ~(1 << 0); //PCINT0 ausschalten
@@ -332,7 +340,11 @@ ISR(TIMER2_COMPA_vect)
       TCNT2 = 0; //Zählerstand des Timer2 zurücksetzen
 
       TCCR2B = 0;//Timer2 stoppen
+
+
       tasteLangeGedrueckt = true;
+      
+
 
       PCMSK0 &= ~(1 << 0); //PCINT0 ausschalten
       EIMSK = 0;  //Alle INT-Interrupts ausschalten
@@ -545,12 +557,15 @@ void kurzerTastendruck()
 
   weckerzustand ^= true;            //Wecker ein/aus
 
-  if (weckerzustand == true) {      //Weckersymbol ein
+  if (weckerzustand == true)
+  { //Weckersymbol ein
     ganzausgabe(3, wecker_ein[0]);
     ganzausgabe(2, wecker_ein[1]);
     ganzausgabe(1, wecker_ein[2]);
     ganzausgabe(0, wecker_ein[3]);
-  } else {                          //Weckersymbol aus
+  }
+  else
+  { //Weckersymbol aus
     ganzausgabe(2, wecker_aus[0]);
     ganzausgabe(1, wecker_aus[1]);
   }
@@ -582,6 +597,7 @@ void kurzerTastendruck()
 void langerTastendruck()
 {
   tasteLangeGedrueckt = false;
+  weckzeitEingestellt = false;
 
   lc.clearDisplay(3);
   lc.clearDisplay(2);
@@ -619,14 +635,15 @@ void langerTastendruck()
   sekundenNachholen();      //Alle Sekunden neu darstellen
 }
 
-void weckzeitEinstellen() {
+void weckzeitEinstellen()
+{
 
   tasteKurzGedrueckt = false;  //Um Tastendruck währen der WeckzeitEinstellen-Anzeige nicht möglich zu machen
   lc.setLed(2, 2, 7, true);     // Doppelpunkt am Anfang einblenden
   lc.setLed(2, 5, 7, true);
-  boolean weckzeitEingestellt = false;  //Wenn auf false gesetzt, dann Weckzeit eingestellt und raus aus der do-while Schleife
 
-  do {
+  do
+  {
     //Weckzeit zum Darstellen auf den Displays berechnen
     minWeckzeit_LSB = (weckzeit.min % 10);
     minWeckzeit_MSB = (weckzeit.min / 10) % 10;
@@ -642,13 +659,27 @@ void weckzeitEinstellen() {
     ausgabe(3, zahl[stundeWeckzeit_MSB]);
 
     delay(450);
-
+    
+    //Langer Tastendruck zum Uhrzeiteintellen
+    if(tasteLangeGedrueckt==true)
+    {
+      delay(3000);
+      weckzeitEingestellt=true;
+      uhrzeitEinstellen();
+    } 
+    else 
+    {
+      Serial.println("0");
+    }
 
     //Wie oft wurde der Taster gedrückt
-    if (tasteKurzGedrueckt == true && tastendruckAnz == 0) {
+    if (tasteKurzGedrueckt == true && tastendruckAnz == 0)
+    {
       tastendruckAnz = 1;
       tasteKurzGedrueckt = false;
-    } else if (tasteKurzGedrueckt == true && tastendruckAnz == 1) {
+    }
+    else if (tasteKurzGedrueckt == true && tastendruckAnz == 1)
+    {
       tastendruckAnz = 2;
       tasteKurzGedrueckt = false;
     }
@@ -657,11 +688,13 @@ void weckzeitEinstellen() {
     {
       lc.clearDisplay(3);
       lc.clearDisplay(2);
-    } else if (tastendruckAnz == 1)
+    }
+    else if (tastendruckAnz == 1)
     { //Minuten löschen
       lc.clearDisplay(1);
       lc.clearDisplay(0);
-    } else if (tastendruckAnz == 2)
+    }
+    else if (tastendruckAnz == 2)
     { //zurück zur Anzeige der Uhrzeit
       tastendruckAnz = 0;
       weckzeitEingestellt = true;
@@ -671,9 +704,19 @@ void weckzeitEinstellen() {
     lc.setLed(2, 5, 7, true);
     delay(375);
 
-  } while (weckzeitEingestellt == false);
+  }
+  while (weckzeitEingestellt == false);
+
   tasteKurzGedrueckt = false;  //taste zurücksetzen
 
+}
+
+void uhrzeitEinstellen()
+{
+  lc.clearDisplay(3);
+  lc.clearDisplay(2);
+  lc.clearDisplay(1);
+  delay(3000);
 }
 
 void loop()
