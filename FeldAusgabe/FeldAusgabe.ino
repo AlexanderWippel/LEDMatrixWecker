@@ -16,6 +16,7 @@
 
 Time rtc_zeit;
 Time weckzeit;
+Time uhrzeit;
 int zwischenzeit;
 
 boolean doppelpunktBoolean = true;
@@ -48,6 +49,11 @@ int minWeckzeit_LSB;
 int minWeckzeit_MSB;
 int stundeWeckzeit_LSB;
 int stundeWeckzeit_MSB;
+
+int minUhrzeit_LSB;
+int minUhrzeit_MSB;
+int stundeUhrzeit_LSB;
+int stundeUhrzeit_MSB;
 
 //Taster Variable
 int t = 0;
@@ -338,8 +344,12 @@ ISR(TIMER2_COMPA_vect)
 
       TCCR2B = 0;//Timer2 stoppen
 
-      tasteLangeGedrueckt = true;
-     
+      
+      if(uhrzeitEingestellt!=false)
+      {
+         tasteLangeGedrueckt = true;
+      }
+       
       PCMSK0 &= ~(1 << 0); //PCINT0 ausschalten
       EIMSK = 0;  //Alle INT-Interrupts ausschalten
       TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
@@ -631,7 +641,7 @@ void langerTastendruck()
 
 void weckzeitEinstellen()
 {
-
+  tastendruckAnz = 0;
   tasteKurzGedrueckt = false;  //Um Tastendruck währen der WeckzeitEinstellen-Anzeige nicht möglich zu machen
   lc.setLed(2, 2, 7, true);     // Doppelpunkt am Anfang einblenden
   lc.setLed(2, 5, 7, true);
@@ -657,8 +667,9 @@ void weckzeitEinstellen()
     //Langer Tastendruck zum Uhrzeiteintellen
     if(tasteLangeGedrueckt==true)
     {
-      delay(3000);
+      //delay(3000);
       weckzeitEingestellt=true;
+      uhrzeitEingestellt=false;
       uhrzeitEinstellen();
     } 
     else 
@@ -707,11 +718,88 @@ void weckzeitEinstellen()
 
 void uhrzeitEinstellen()
 {
+  tastendruckAnz = 0;
   lc.clearDisplay(3);
   lc.clearDisplay(2);
   lc.clearDisplay(1);
-   Serial.println("uhrzeiteinstellen");
-  //delay(3000);
+  lc.clearDisplay(0);
+
+  ganzausgabe(3, weckerUhrzeitEinstellen[0]);
+  ganzausgabe(2, weckerUhrzeitEinstellen[1]);
+  ganzausgabe(1, weckerUhrzeitEinstellen[2]);
+  ganzausgabe(0, weckerUhrzeitEinstellen[3]);
+
+  delay(3000);
+
+  lc.clearDisplay(3);
+  lc.clearDisplay(2);
+  lc.clearDisplay(1);
+  lc.clearDisplay(0);
+
+  tasteKurzGedrueckt = false;  //Um Tastendruck währen der UhrzeitEinstellen-Anzeige nicht möglich zu machen
+  lc.setLed(2, 2, 7, true);     // Doppelpunkt am Anfang einblenden
+  lc.setLed(2, 5, 7, true);
+
+  do
+  {
+    
+    //Uhrzeit zum Darstellen auf den Displays berechnen
+    minUhrzeit_LSB = (uhrzeit.min % 10);
+    minUhrzeit_MSB = (uhrzeit.min / 10) % 10;
+
+    stundeUhrzeit_LSB = (uhrzeit.hour % 10);
+    stundeUhrzeit_MSB = (uhrzeit.hour / 10) % 10;
+
+    //Ausgabe der Weckzeit zum einstellen
+    ausgabe(0, zahl[minUhrzeit_LSB]);      //Minuten anzeigen
+    ausgabe(1, zahl[minUhrzeit_MSB]);
+
+    ausgabe(2, zahl[stundeUhrzeit_LSB]);   //Stunden anzeigen
+    ausgabe(3, zahl[stundeUhrzeit_MSB]);
+
+    delay(450);
+
+   
+    
+    //Wie oft wurde der Taster gedrückt
+    if (tasteKurzGedrueckt == true && tastendruckAnz == 0)
+    {
+      tastendruckAnz = 1;
+      tasteKurzGedrueckt = false;
+    }
+    else if (tasteKurzGedrueckt == true && tastendruckAnz == 1)
+    {
+      tastendruckAnz = 2;
+      tasteKurzGedrueckt = false;
+    }
+
+    if (tastendruckAnz == 0)                  //Stunden löschen
+    {
+      lc.clearDisplay(3);
+      lc.clearDisplay(2);
+    }
+    else if (tastendruckAnz == 1)
+    { //Minuten löschen
+      lc.clearDisplay(1);
+      lc.clearDisplay(0);
+    }
+    else if (tastendruckAnz == 2)
+    { //zurück zur Anzeige der Uhrzeit
+      tastendruckAnz = 0;
+      uhrzeitEingestellt = true;
+    }
+
+    lc.setLed(2, 2, 7, true);       //Doppelpunkt wieder anzeigen
+    lc.setLed(2, 5, 7, true);
+    delay(375);
+
+    Serial.println(uhrzeitEingestellt);
+  }
+  
+  while (uhrzeitEingestellt == false);
+
+  tasteKurzGedrueckt = false;  //taste zurücksetzen
+  
 }
 
 void loop()
