@@ -338,11 +338,8 @@ ISR(TIMER2_COMPA_vect)
 
       TCCR2B = 0;//Timer2 stoppen
 
-
       tasteLangeGedrueckt = true;
-      
-
-
+     
       PCMSK0 &= ~(1 << 0); //PCINT0 ausschalten
       EIMSK = 0;  //Alle INT-Interrupts ausschalten
       TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
@@ -713,7 +710,8 @@ void uhrzeitEinstellen()
   lc.clearDisplay(3);
   lc.clearDisplay(2);
   lc.clearDisplay(1);
-  delay(3000);
+   Serial.println("uhrzeiteinstellen");
+  //delay(3000);
 }
 
 void loop()
