@@ -195,7 +195,7 @@ void setup()
   for (int address = 0; address < devices; address++)
   {
     lc.shutdown(address, false);
-    lc.setIntensity(address, 5);
+    lc.setIntensity(address, 2);
     lc.clearDisplay(address);
   };
   rtc_zeit = rtc.getTime();
@@ -266,10 +266,7 @@ ISR(INT1_vect)  //Main Taster
     if ((PIND | t) == t)
     {
       Serial.println("INT1 wird ausgeführt");
-
-
       TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
-
     }
   }
 }
