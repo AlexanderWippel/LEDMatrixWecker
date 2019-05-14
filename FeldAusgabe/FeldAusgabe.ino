@@ -2,7 +2,6 @@
 //Plus-Taster  am PIN8
 //Minus-Taster am PIN2
 
-
 #include <LedControl.h>
 #include <DS3231.h>
 
@@ -663,19 +662,6 @@ void weckzeitEinstellen()
     ausgabe(3, zahl[stundeWeckzeit_MSB]);
 
     delay(450);
-    
-    //Langer Tastendruck zum Uhrzeiteintellen
-    if(tasteLangeGedrueckt==true)
-    {
-      //delay(3000);
-      weckzeitEingestellt=true;
-      uhrzeitEingestellt=false;
-      uhrzeitEinstellen();
-    } 
-    else 
-    {
-      Serial.println("0");
-    }
 
     //Wie oft wurde der Taster gedrückt
     if (tasteKurzGedrueckt == true && tastendruckAnz == 0)
@@ -708,6 +694,19 @@ void weckzeitEinstellen()
     lc.setLed(2, 2, 7, true);       //Doppelpunkt wieder anzeigen
     lc.setLed(2, 5, 7, true);
     delay(375);
+
+    //Langer Tastendruck zum Uhrzeiteintellen
+    if(tasteLangeGedrueckt==true)
+    {
+      //delay(3000);
+      weckzeitEingestellt=true;
+      uhrzeitEingestellt=false;
+      uhrzeitEinstellen();
+    } 
+    else 
+    {
+      Serial.println("0");
+    }
 
   }
   while (weckzeitEingestellt == false);
@@ -798,7 +797,8 @@ void uhrzeitEinstellen()
   
   while (uhrzeitEingestellt == false);
 
-  tasteKurzGedrueckt = false;  //taste zurücksetzen
+  tasteKurzGedrueckt = false;   //taste zurücksetzen
+  tasteLangeGedrueckt = false;  //taste zurücksetzen
   
 }
 
