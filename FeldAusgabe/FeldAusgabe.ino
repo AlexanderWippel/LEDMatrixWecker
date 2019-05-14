@@ -190,7 +190,6 @@ void setup()
 
 
   rtc.begin();
-  rtc.setTime(12, 10, 0);
 
   weckzeit.hour = 6;  //Weckzeit zum Einstellen standarmäßig auf 6:00
   weckzeit.min = 0;
@@ -222,8 +221,6 @@ ISR(INT0_vect)  //geht immer 2mal hinein
       Serial.println("INT0 wird ausgeführt");
       if (weckzeitEingestellt == false)
       {
-
-
         if (tastendruckAnz == 1)
         {
           if (weckzeit.min <= 59 && weckzeit.min >= 0)
@@ -249,6 +246,38 @@ ISR(INT0_vect)  //geht immer 2mal hinein
             else
             {
               weckzeit.hour--;
+            }
+          }
+        }
+      }
+
+      if (uhrzeitEingestellt == false)
+      {
+        if (tastendruckAnz == 1)
+        {
+          if (uhrzeit.min <= 59 && uhrzeit.min >= 0)
+          {
+            if (uhrzeit.min <= 0)
+            {
+              uhrzeit.min = 59;
+            }
+            else
+            {
+              uhrzeit.min--;
+            }
+          }
+        }
+        else if (tastendruckAnz == 0)
+        {
+          if (uhrzeit.hour <= 23 && uhrzeit.hour >= 0)
+          {
+            if (uhrzeit.hour <= 0)
+            {
+              uhrzeit.hour = 23;
+            }
+            else
+            {
+              uhrzeit.hour--;
             }
           }
         }
@@ -291,7 +320,6 @@ ISR(PCINT0_vect)
     {
       if (weckzeitEingestellt == false)
       {
-
         if (tastendruckAnz == 1)
         {
           if (weckzeit.min < 59)
@@ -312,6 +340,32 @@ ISR(PCINT0_vect)
           else
           {
             weckzeit.hour = 0;
+          }
+        }
+      }
+
+      if (uhrzeitEingestellt == false)
+      {
+        if (tastendruckAnz == 1)
+        {
+          if (uhrzeit.min < 59)
+          {
+            uhrzeit.min++;
+          }
+          else
+          {
+            uhrzeit.min = 0;
+          }
+        }
+        else if (tastendruckAnz == 0)
+        {
+          if (uhrzeit.hour < 23)
+          {
+            uhrzeit.hour++;
+          }
+          else
+          {
+            uhrzeit.hour = 0;
           }
         }
       }
@@ -343,12 +397,12 @@ ISR(TIMER2_COMPA_vect)
 
       TCCR2B = 0;//Timer2 stoppen
 
-      
-      if(uhrzeitEingestellt!=false)
+
+      if (uhrzeitEingestellt != false)
       {
-         tasteLangeGedrueckt = true;
+        tasteLangeGedrueckt = true;
       }
-       
+
       PCMSK0 &= ~(1 << 0); //PCINT0 ausschalten
       EIMSK = 0;  //Alle INT-Interrupts ausschalten
       TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
@@ -696,20 +750,21 @@ void weckzeitEinstellen()
     delay(375);
 
     //Langer Tastendruck zum Uhrzeiteintellen
-    if(tasteLangeGedrueckt==true)
+    if (tasteLangeGedrueckt == true)
     {
       //delay(3000);
-      weckzeitEingestellt=true;
-      uhrzeitEingestellt=false;
+      weckzeitEingestellt = true;
+      uhrzeitEingestellt = false;
       uhrzeitEinstellen();
-    } 
-    else 
+    }
+    else
     {
       Serial.println("0");
     }
 
   }
   while (weckzeitEingestellt == false);
+
 
   tasteKurzGedrueckt = false;  //taste zurücksetzen
 
@@ -739,9 +794,11 @@ void uhrzeitEinstellen()
   lc.setLed(2, 2, 7, true);     // Doppelpunkt am Anfang einblenden
   lc.setLed(2, 5, 7, true);
 
+  uhrzeit = rtc.getTime();
+
   do
   {
-    
+
     //Uhrzeit zum Darstellen auf den Displays berechnen
     minUhrzeit_LSB = (uhrzeit.min % 10);
     minUhrzeit_MSB = (uhrzeit.min / 10) % 10;
@@ -758,8 +815,8 @@ void uhrzeitEinstellen()
 
     delay(450);
 
-   
-    
+
+
     //Wie oft wurde der Taster gedrückt
     if (tasteKurzGedrueckt == true && tastendruckAnz == 0)
     {
@@ -794,12 +851,16 @@ void uhrzeitEinstellen()
 
     Serial.println(uhrzeitEingestellt);
   }
-  
+
   while (uhrzeitEingestellt == false);
+
+  rtc.setTime(uhrzeit.hour, uhrzeit.min, 0);
+
+  uhrzeitBerechnen();
 
   tasteKurzGedrueckt = false;   //taste zurücksetzen
   tasteLangeGedrueckt = false;  //taste zurücksetzen
-  
+
 }
 
 void loop()
@@ -831,6 +892,7 @@ void loop()
     if (ersterWeckerDurchlauf == true)
     {
       uhrzeitAnzeigen();
+      sekundenNachholen();
       ersterWeckerDurchlauf = false;
     }
 
