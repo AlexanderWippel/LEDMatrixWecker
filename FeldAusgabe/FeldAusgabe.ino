@@ -765,8 +765,10 @@ void weckzeitEinstellen()
   }
   while (weckzeitEingestellt == false);
 
-
+  
   tasteKurzGedrueckt = false;  //taste zurücksetzen
+
+  uhrzeitBerechnen();
 
 }
 
@@ -863,6 +865,12 @@ void uhrzeitEinstellen()
 
 }
 
+void wecken()
+{
+  for(i=0;i<100;i++){Serial.println("Wecken");}
+}
+
+
 void loop()
 {
   if (tasteKurzGedrueckt == true) //In der Funktion kurzerTastendruck sind delays. Deswegen wird die Funktion im main ausgeführt
@@ -917,6 +925,10 @@ void loop()
     if (rtc_zeit.sec == 59)
     {
       sekundenanzeigeZuruecksetzen();
+      if((rtc_zeit.min) == weckzeit.min)
+      {
+        wecken();
+      }
     }
     zwischenzeit = rtc_zeit.sec;
   }
