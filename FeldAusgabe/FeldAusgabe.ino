@@ -24,6 +24,9 @@ boolean tasteKurzGedrueckt = false;
 boolean tasteLangeGedrueckt = false;
 int tastendruckAnz = 0;
 
+boolean wecken1=true;
+boolean wecken2=false;
+
 boolean weckzeitEingestellt = true;  //Wenn auf false gesetzt, dann Weckzeit eingestellt und raus aus der do-while Schleife
 boolean uhrzeitEingestellt = true;  //Wenn auf false gesetzt, dann Uhrzeit eingestellt und raus aus der do-while Schleife
 
@@ -117,6 +120,7 @@ void setup()
   CLKPR = 0x80; //ClockChangeEnable
   CLKPR = 0x00; //CLK=16Mhz
 
+
   //Input und Outputbechaltung
   DDRB = DDRB | (1 << 5);
   DDRB = DDRB & ~(1 << 0);
@@ -138,6 +142,7 @@ void setup()
   digitalWrite(6, LOW);
   digitalWrite(7, LOW);
   digitalWrite(5, LOW);
+  pinMode(9,OUTPUT);
 
   //Externen Interrupt am PIN8(PB0) wenn die Logik toggelt              Plus-Taster
   DDRB &= ~(1 << 0);
@@ -191,8 +196,8 @@ void setup()
 
   rtc.begin();
 
-  weckzeit.hour = 6;  //Weckzeit zum Einstellen standarmäßig auf 6:00
-  weckzeit.min = 0;
+  //weckzeit.hour = 6;  //Weckzeit zum Einstellen standarmäßig auf 6:00
+  //weckzeit.min = 0;
 
   int devices = lc.getDeviceCount();
 
@@ -300,7 +305,14 @@ ISR(INT1_vect)  //Main Taster
     if ((PIND | t) == t)
     {
       Serial.println("INT1 wird ausgeführt");
-      TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
+      if(wecken2==true)
+      {
+        wecken1=false;
+      }
+      else
+      {
+        TCCR2B = 7; //Timer2 mit Takt-Teiler 1024 starten
+      }
     }
   }
 }
@@ -867,7 +879,35 @@ void uhrzeitEinstellen()
 
 void wecken()
 {
-  for(i=0;i<100;i++){Serial.println("Wecken");}
+  wecken2=true;
+  
+  lc.setIntensity(3,15);
+  lc.setIntensity(2,15);
+  lc.setIntensity(1,15);
+  lc.setIntensity(0,15);
+  
+  while(wecken1==true)
+  {
+   uhrzeitAnzeigen();
+   lc.setLed(2, 2, 7, true);
+   lc.setLed(2, 5, 7, true);
+
+   for(i=0;i<400;i++)
+   {
+    PORTB=PORTB^(1<<1);
+    delayMicroseconds(1136);
+   }
+   PORTB&=~(1<<1);
+   
+   lc.clearDisplay(3);
+   lc.clearDisplay(2);
+   lc.clearDisplay(1);
+   lc.clearDisplay(0);
+   
+   delay(400);
+  }
+  wecken1=true;
+  wecken2=false;
 }
 
 
@@ -925,9 +965,16 @@ void loop()
     if (rtc_zeit.sec == 59)
     {
       sekundenanzeigeZuruecksetzen();
-      if((rtc_zeit.min) == weckzeit.min)
+      if((rtc_zeit.min) == weckzeit.min && (rtc_zeit.hour) == weckzeit.hour && weckerzustand==true)
       {
         wecken();
+        lc.setIntensity(3,2);
+        lc.setIntensity(2,2);
+        lc.setIntensity(1,2);
+        lc.setIntensity(0,2);
+        uhrzeitBerechnen();
+        uhrzeitAnzeigen();
+        sekundenNachholen();
       }
     }
     zwischenzeit = rtc_zeit.sec;
