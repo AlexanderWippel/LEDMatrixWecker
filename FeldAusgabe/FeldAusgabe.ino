@@ -135,7 +135,6 @@ void setup()
   PORTD |= (1 << 3);
 
 
-  Serial.begin(9600);
   pinMode(7, OUTPUT);
   pinMode(6, OUTPUT);
   pinMode(5, OUTPUT);
@@ -193,11 +192,7 @@ void setup()
   TIMSK2 = TIMSK2 | (1 << 1); //Timer2 COMPA-Interrupt enable
   SREG = SREG | (1 << 7);    //Interrupt global freigeschaltet
 
-
   rtc.begin();
-
-  //weckzeit.hour = 6;  //Weckzeit zum Einstellen standarmäßig auf 6:00
-  //weckzeit.min = 0;
 
   int devices = lc.getDeviceCount();
 
@@ -207,23 +202,23 @@ void setup()
     lc.setIntensity(address, 2);
     lc.clearDisplay(address);
   };
+  
   rtc_zeit = rtc.getTime();
   zwischenzeit = rtc_zeit.sec;
-
 };
 
 ISR(INT0_vect)  //geht immer 2mal hinein
 {
   EIMSK = 0;  //Alle INT-Interrupts ausschalten
   TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
-  Serial.println("im INT0");
+  
   t = 0b11111011;
   if ((PIND | t) == t)
   {
     delay(15);
     if ((PIND | t) == t)
     {
-      Serial.println("INT0 wird ausgeführt");
+      
       if (weckzeitEingestellt == false)
       {
         if (tastendruckAnz == 1)
@@ -295,7 +290,7 @@ ISR(INT1_vect)  //Main Taster
 {
   EIMSK = 0;  //Alle INT-Interrupts ausschalten
   TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
-  Serial.println("im INT1");
+  
 
   t = 0b11110111;
 
@@ -304,7 +299,7 @@ ISR(INT1_vect)  //Main Taster
     delay(15);
     if ((PIND | t) == t)
     {
-      Serial.println("INT1 wird ausgeführt");
+      
       if(wecken2==true)
       {
         wecken1=false;
@@ -321,7 +316,7 @@ ISR(PCINT0_vect)
 {
 
   TCCR1B = 5; //Timer1 mit Takt-Teiler 1024 starten
-  Serial.println("im PCINT0");
+  
 
   t = 0b11111110;
 
@@ -388,7 +383,6 @@ ISR(PCINT0_vect)
 
 ISR(TIMER1_COMPA_vect)
 {
-  Serial.println("im Timer 1");
   EIMSK = 3;      //Alle INT-Interrupts einschalten
   PCMSK0 |= (1 << 0); //PCINT0 einschalten
   TCNT1 = 0;      //Zählerstand des Timer1 zurücksetzen
@@ -397,18 +391,15 @@ ISR(TIMER1_COMPA_vect)
 
 ISR(TIMER2_COMPA_vect)
 {
-  Serial.println("im Timer 2");
-  if ((PIND | t) == t || (PIND | t) == t || (PINB | t) == t || (PINB | t) == t)
+  if ((PIND | t) == t || (PINB | t) == t)
   {
     x++;
     if (x == 100)
     {
       x = 0;
-      Serial.println("Taster lange gedrückt");
+      
       TCNT2 = 0; //Zählerstand des Timer2 zurücksetzen
-
       TCCR2B = 0;//Timer2 stoppen
-
 
       if (uhrzeitEingestellt != false)
       {
@@ -422,7 +413,7 @@ ISR(TIMER2_COMPA_vect)
   }
   else
   {
-    Serial.println("Taster kurz gedrückt");
+    
     x = 0;
 
     TCNT2 = 0;  //Zählerstand des Timer2 zurücksetzen
@@ -769,16 +760,13 @@ void weckzeitEinstellen()
       uhrzeitEingestellt = false;
       uhrzeitEinstellen();
     }
-    else
-    {
-      Serial.println("0");
-    }
-
   }
   while (weckzeitEingestellt == false);
 
   
   tasteKurzGedrueckt = false;  //taste zurücksetzen
+
+  
 
   uhrzeitBerechnen();
 
@@ -862,8 +850,6 @@ void uhrzeitEinstellen()
     lc.setLed(2, 2, 7, true);       //Doppelpunkt wieder anzeigen
     lc.setLed(2, 5, 7, true);
     delay(375);
-
-    Serial.println(uhrzeitEingestellt);
   }
 
   while (uhrzeitEingestellt == false);
