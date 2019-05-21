@@ -16,6 +16,7 @@
 Time rtc_zeit;
 Time weckzeit;
 Time uhrzeit;
+Time zwischenzeit1;
 int zwischenzeit;
 
 boolean doppelpunktBoolean = true;
@@ -872,7 +873,7 @@ void wecken()
   lc.setIntensity(1,15);
   lc.setIntensity(0,15);
   
-  while(wecken1==true)
+  while(wecken1==true && (zwischenzeit1.min-weckzeit.min<2))
   {
    uhrzeitAnzeigen();
    lc.setLed(2, 2, 7, true);
@@ -891,6 +892,7 @@ void wecken()
    lc.clearDisplay(0);
    
    delay(400);
+   zwischenzeit1=rtc.getTime();
   }
   wecken1=true;
   wecken2=false;
